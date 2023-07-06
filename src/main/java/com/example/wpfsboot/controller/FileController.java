@@ -10,6 +10,8 @@ import com.example.wpfsboot.common.Constants;
 import com.example.wpfsboot.common.Result;
 import com.example.wpfsboot.entity.Files;
 import com.example.wpfsboot.mapper.FileMapper;
+import com.google.gson.Gson;
+import com.opencsv.CSVReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -20,9 +22,15 @@ import javax.annotation.Resource;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 
 /**
  * 文件上传相关接口
@@ -61,7 +69,12 @@ public class FileController {
         //String fileUUID = IdUtil.fastSimpleUUID() + StrUtil.DOT + type;
         String fileUUID = file.getOriginalFilename();
 
-        File uploadFile = new File(fileUploadPath + fileUUID);
+
+        // 上传文件的路径
+        File uploadFile = new File(fileUploadPath + "/origin/csv/" + fileUUID);
+        String jsonFilePath = fileUploadPath + "/origin/json/" + FileUtil.mainName(originalFilename) + ".json";
+
+
         // 判断配置的文件目录是否存在，若不存在则创建一个新的文件目录
         File parentFile = uploadFile.getParentFile();
         if (!parentFile.exists()) {
@@ -70,9 +83,8 @@ public class FileController {
 
         String url;
         // 获取文件的md5
-//        String md5 = SecureUtil.md5(file.getInputStream());
+        //String md5 = SecureUtil.md5(file.getInputStream());
         String md5 = file.getOriginalFilename();
-
 
         // 从数据库查询是否存在相同的记录
         Files dbFiles = getFileByMd5(md5);
@@ -81,6 +93,43 @@ public class FileController {
         } else {
             // 上传文件到磁盘
             file.transferTo(uploadFile);
+
+            // 将csv文件转为json文件
+            try (CSVReader reader = new CSVReader(new FileReader(uploadFile))) {
+                List<String[]> csvData = reader.readAll();
+                List<Object> jsonData = new ArrayList<>();
+
+                // Assuming the first row of the CSV file contains column headers
+                String[] headers = csvData.get(0);
+
+                // Convert each row to a JSON object
+                for (int i = 1; i < csvData.size(); i++) {
+                    String[] row = csvData.get(i);
+                    // Create a Map or a custom class to represent each row as JSON
+                    // For simplicity, using a Map here
+                    // You can define your own class and populate its attributes if needed
+                    // Here, we assume that the CSV has the same number of columns as headers
+                    // If not, you need to handle that accordingly
+                    // For example, skipping rows with different lengths or filling with default values
+                    // before converting to JSON
+                    Map<String, String> rowData = new HashMap<>();
+                    for (int j = 0; j < headers.length; j++) {
+                        rowData.put(headers[j], row[j]);
+                    }
+                    jsonData.add(rowData);
+                }
+
+                // Convert the JSON data to a JSON string
+                String jsonString = new Gson().toJson(jsonData);
+
+                // Write the JSON string to a file
+                try (FileWriter writer = new FileWriter(jsonFilePath)) {
+                    writer.write(jsonString);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             // 数据库若不存在重复文件，则不删除刚才上传的文件
             url = "http://" + serverIp + ":7070/file/" + fileUUID;
         }
