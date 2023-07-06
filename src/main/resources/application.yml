@@ -1,0 +1,55 @@
+server:
+  ip: localhost
+  port: 7070
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://125.220.153.23:31621/wpfs?serverTimezone=GMT%2b8 # 数据库地址
+    username: root
+    password: VubCMiHvT1
+  redis:
+    host: 125.220.153.23 # redis地址
+    port: 31352
+    password: GWCMnhHUYa
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  boot:
+    admin:
+      client:
+        url: http://localhost:7777  # SpringBoot Admin的服务端地址
+        instance:
+          prefer-ip: true # 基于IP地址进行服务器注册，默认域名注册
+  application:
+    name: WPFS-BOOT  # spb项目名称
+mybatis:
+  mapper-locations: classpath:mapper/*.xml  #扫描所有mybatis的xml文件
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+files:
+  upload:
+    path: C:/Users/Jiaoshou/Desktop/files/    # 文件上传路径
+
+
+#开放端点用于SpringBoot Admin的监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+    endpoint:
+      health:
+        show-details: always
+        enabled: true
+      info:
+        enabled: false
+      metrics:
+        enabled: true
+    enabled-by-default: true  # 开启所有监控端点
+
