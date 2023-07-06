@@ -46,6 +46,7 @@ public class FileController {
 
     /**
      * 文件上传接口
+     *
      * @param file 前端传递过来的文件
      * @return
      * @throws IOException
@@ -57,18 +58,22 @@ public class FileController {
         long size = file.getSize();
 
         // 定义一个文件唯一的标识码
-        String fileUUID = IdUtil.fastSimpleUUID() + StrUtil.DOT + type;
+        //String fileUUID = IdUtil.fastSimpleUUID() + StrUtil.DOT + type;
+        String fileUUID = file.getOriginalFilename();
 
         File uploadFile = new File(fileUploadPath + fileUUID);
         // 判断配置的文件目录是否存在，若不存在则创建一个新的文件目录
         File parentFile = uploadFile.getParentFile();
-        if(!parentFile.exists()) {
+        if (!parentFile.exists()) {
             parentFile.mkdirs();
         }
 
         String url;
         // 获取文件的md5
-        String md5 = SecureUtil.md5(file.getInputStream());
+//        String md5 = SecureUtil.md5(file.getInputStream());
+        String md5 = file.getOriginalFilename();
+
+
         // 从数据库查询是否存在相同的记录
         Files dbFiles = getFileByMd5(md5);
         if (dbFiles != null) {
@@ -85,7 +90,7 @@ public class FileController {
         Files saveFile = new Files();
         saveFile.setName(originalFilename);
         saveFile.setType(type);
-        saveFile.setSize(size/1024); // 单位 kb
+        saveFile.setSize(size / 1024); // 单位 kb
         saveFile.setUrl(url);
         saveFile.setMd5(md5);
         fileMapper.insert(saveFile);
@@ -111,6 +116,7 @@ public class FileController {
 
     /**
      * 文件下载接口   http://localhost:7070/file/{fileUUID}
+     *
      * @param fileUUID
      * @param response
      * @throws IOException
@@ -133,6 +139,7 @@ public class FileController {
 
     /**
      * 通过文件的md5查询文件
+     *
      * @param md5
      * @return
      */
@@ -144,7 +151,7 @@ public class FileController {
         return filesList.size() == 0 ? null : filesList.get(0);
     }
 
-//    @CachePut(value = "files", key = "'frontAll'")
+    //    @CachePut(value = "files", key = "'frontAll'")
     @PostMapping("/update")
     public Result update(@RequestBody Files files) {
         fileMapper.updateById(files);
@@ -183,6 +190,7 @@ public class FileController {
 
     /**
      * 分页查询接口
+     *
      * @param pageNum
      * @param pageSize
      * @param name
