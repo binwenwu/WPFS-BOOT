@@ -72,14 +72,32 @@ public class FileController {
 
         // 上传文件的路径
         File uploadFile = new File(fileUploadPath + "/origin/csv/" + fileUUID);
-        String jsonFilePath = fileUploadPath + "/origin/json/" + FileUtil.mainName(originalFilename) + ".json";
 
+
+        String jsonFolderPath = fileUploadPath + "/origin/json/";
+
+        // 创建JSON文件夹
+        File jsonFolder = new File(jsonFolderPath);
+        if (!jsonFolder.exists()) {
+            boolean created = jsonFolder.mkdirs();
+            if (!created) {
+                // JSON文件夹创建失败，处理异常情况
+                // 可以抛出异常或打印错误日志
+                System.err.println("Failed to create JSON folder.");
+            }
+        }
+        String jsonFilePath = jsonFolderPath + FileUtil.mainName(originalFilename) + ".json";
+
+
+
+//        String jsonFilePath = fileUploadPath + "origin/json/" + FileUtil.mainName(originalFilename) + ".json";
 
         // 判断配置的文件目录是否存在，若不存在则创建一个新的文件目录
         File parentFile = uploadFile.getParentFile();
         if (!parentFile.exists()) {
             parentFile.mkdirs();
         }
+
 
         String url;
         // 获取文件的md5
