@@ -31,7 +31,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 
+import java.io.InputStream;
 /**
  * 文件上传相关接口
  */
@@ -286,6 +291,61 @@ public class FileController {
     // 删除缓存
     private void flushRedis(String key) {
         stringRedisTemplate.delete(key);
+    }
+
+
+    // 预测
+    @PostMapping("/forecast")
+    public Result update(@RequestBody String fileName) {
+
+        String host = "125.220.153.23"; // 远程服务器IP地址
+        String user = "root"; // 远程服务器用户名
+        String password = "geopwlmars69"; // 远程服务器密码
+        // 要执行的命令
+        StringBuilder command = new StringBuilder("pwd;");
+        command.append("ls -la;");
+
+        try {
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+            session.setPassword(password); // 设置会话密码
+            session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置
+            session.connect(); // 连接会话
+
+            Channel channel = session.openChannel("exec"); // 打开一个exec通道
+            ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+            channel.setInputStream(null);
+            ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+
+            InputStream inputStream = channel.getInputStream();
+            channel.connect(); // 连接通道
+
+            byte[] buffer = new byte[1024];
+            while (true) {
+                while (inputStream.available() > 0) {
+                    int i = inputStream.read(buffer, 0, 1024);
+                    if (i < 0){
+                        break;
+                    }
+                    System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                }
+                if (channel.isClosed()) {
+                    if (inputStream.available() > 0) {continue;}
+                    System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
+                    break;
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception ee) {
+                } // 等待一秒钟
+            }
+            channel.disconnect(); // 断开通道
+            session.disconnect(); // 断开会话
+        } catch (Exception e) {
+            e.printStackTrace(); // 输出错误信息
+        }
+
+        return Result.success();
     }
 
 }
