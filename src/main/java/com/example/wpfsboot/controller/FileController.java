@@ -296,7 +296,7 @@ public class FileController {
 
     // 预测
     @PostMapping("/forecast")
-    public Result update(@RequestBody String fileName) {
+    public Result forecast(@RequestBody String fileName) {
 
         String host = "10.101.240.60"; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
@@ -309,7 +309,7 @@ public class FileController {
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
             session.setPassword(password); // 设置会话密码
-            session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置
+            session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
             session.connect(); // 连接会话
 
             Channel channel = session.openChannel("exec"); // 打开一个exec通道
