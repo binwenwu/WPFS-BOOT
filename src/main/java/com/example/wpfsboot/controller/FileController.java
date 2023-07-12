@@ -186,6 +186,34 @@ public class FileController {
         return url;
     }
 
+
+    /**
+     *
+     * @param fileUUID
+     * @return
+     * @throws IOException
+     */
+    @GetMapping("/origin/json/{fileUUID}")
+    public Result getOriginJson(@PathVariable String fileUUID) throws IOException {
+        System.out.println("fileUUID = " + fileUUID);
+        return Result.success();
+    }
+
+
+    /**
+     *
+     * @param fileUUID
+     * @return
+     * @throws IOException
+     */
+    @GetMapping("/processed/json/{fileUUID}")
+    public Result getProcessedJson(@PathVariable String fileUUID) throws IOException {
+        System.out.println("fileUUID = " + fileUUID);
+        return Result.success();
+    }
+
+
+
     /**
      * 文件下载接口   http://localhost:7070/file/{fileUUID}
      *
