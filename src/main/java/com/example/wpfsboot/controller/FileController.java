@@ -298,11 +298,13 @@ public class FileController {
     @PostMapping("/forecast")
     public Result forecast(@RequestBody String fileName) {
 
+        System.out.println("fileName = " + fileName);
+
         String host = "10.101.240.60"; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
         String password = "jieshuyuedui"; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("pwd;");
+        StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254;python predict.py;");
         command.append("ls -la;");
 
         try {
