@@ -16,6 +16,10 @@ import com.opencsv.CSVWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +29,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,7 +110,6 @@ public class FileController {
         String jsonFilePath = jsonFolderPath + FileUtil.mainName(originalFilename) + ".json";
 
 
-
 //        String jsonFilePath = fileUploadPath + "origin/json/" + FileUtil.mainName(originalFilename) + ".json";
 
         // 判断配置的文件目录是否存在，若不存在则创建一个新的文件目录
@@ -124,43 +131,44 @@ public class FileController {
         } else {
 
 
-            try (InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
-                 CSVReader csvReader = new CSVReader(inputStreamReader);
-                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(byteArrayOutputStream))) {
 
-                // 读取CSV文件的第一行字段名称
-                String[] header = csvReader.readNext();
+//            try (InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+//                 CSVReader csvReader = new CSVReader(inputStreamReader);
+//                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(byteArrayOutputStream))) {
+//
+//                // 读取CSV文件的第一行字段名称
+//                String[] header = csvReader.readNext();
+//
+//                // 修改字段名称
+//                for (int i = 0; i < header.length; i++) {
+//                    if ("ROUND(A.WS,1)".equals(header[i])) {
+//                        header[i] = "AWS";
+//                    }
+//                    if ("ROUND(A.POWER,0)".equals(header[i])) {
+//                        header[i] = "APOWER";
+//                    }
+//                }
+//
+//                // 写入修改后的字段名称
+//                csvWriter.writeNext(header);
+//
+//                // 读取剩余行数据并写入输出
+//                String[] nextLine;
+//                while ((nextLine = csvReader.readNext()) != null) {
+//                    csvWriter.writeNext(nextLine);
+//                }
+//
+//                // 将修改后的数据写入文件
+//                try (OutputStream outputStream = new FileOutputStream("files/origin/csv/" + originalFilename)) {
+//                    outputStream.write(byteArrayOutputStream.toByteArray());
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 
-                // 修改字段名称
-                for (int i = 0; i < header.length; i++) {
-                    if ("ROUND(A.WS,1)".equals(header[i])) {
-                        header[i] = "AWS";
-                    }
-                    if ("ROUND(A.POWER,0)".equals(header[i])) {
-                        header[i] = "APOWER";
-                    }
-                }
-
-                // 写入修改后的字段名称
-                csvWriter.writeNext(header);
-
-                // 读取剩余行数据并写入输出
-                String[] nextLine;
-                while ((nextLine = csvReader.readNext()) != null) {
-                    csvWriter.writeNext(nextLine);
-                }
-
-                // 将修改后的数据写入文件
-                try (OutputStream outputStream = new FileOutputStream("files/origin/csv/"+originalFilename)) {
-                    outputStream.write(byteArrayOutputStream.toByteArray());
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-//            // 上传文件到磁盘
-//            file.transferTo(uploadFile);
+            // 上传文件到磁盘
+            file.transferTo(uploadFile);
 
             // 将csv文件转为json文件
             try (CSVReader reader = new CSVReader(new FileReader(uploadFile))) {
@@ -182,7 +190,18 @@ public class FileController {
                     // before converting to JSON
                     Map<String, String> rowData = new HashMap<>();
                     for (int j = 0; j < headers.length; j++) {
-                        rowData.put(headers[j], row[j]);
+                        String header = headers[j];
+                        String value = row[j];
+
+                        // 修改字段名称
+                        if ("ROUND(A.WS,1)".equals(header)) {
+                            header = "AWS";
+                        }
+                        if ("ROUND(A.POWER,0)".equals(header)) {
+                            header = "APOWER";
+                        }
+
+                        rowData.put(header, value);
                     }
                     jsonData.add(rowData);
                 }
@@ -199,7 +218,7 @@ public class FileController {
             }
 
             // 数据库若不存在重复文件，则不删除刚才上传的文件
-            url = "http://" + serverIp + ":7070/file/origin/csv/" + originalFilename;
+            url = "http://" + serverIp + ":7070/file/" + originalFilename;
         }
 
 
@@ -233,30 +252,57 @@ public class FileController {
 
 
     /**
+     * 获取处理后json文件内容
      *
-     * @param fileUUID
+     * @param fileName
      * @return
      * @throws IOException
      */
-    @GetMapping("/origin/json/{fileUUID}")
-    public Result getOriginJson(@PathVariable String fileUUID) throws IOException {
-        System.out.println("fileUUID = " + fileUUID);
-        return Result.success();
+    @GetMapping("/origin/json/{fileName}")
+    public ResponseEntity<Result> getOriginJson(@PathVariable String fileName) throws IOException {
+        System.out.println("fileName = " + fileName);
+        String filePath = fileUploadPath + "/origin/json/" + fileName;  // 替换为实际的文件路径
+        System.out.println("filePath = " + filePath);
+
+        // 读取文件内容
+        Path jsonFilePath = Paths.get(filePath);
+        byte[] fileBytes = java.nio.file.Files.readAllBytes(jsonFilePath);
+        String jsonContent = new String(fileBytes);
+
+
+        Result result = new Result();
+        result.setJsonContent(jsonContent);
+
+        // 返回结果
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
 
     /**
+     * 获取原始json文件内容
      *
-     * @param fileUUID
+     * @param fileName
      * @return
      * @throws IOException
      */
-    @GetMapping("/processed/json/{fileUUID}")
-    public Result getProcessedJson(@PathVariable String fileUUID) throws IOException {
-        System.out.println("fileUUID = " + fileUUID);
-        return Result.success();
-    }
+    @GetMapping("/processed/json/{fileName}")
+    public ResponseEntity<Result> getProcessedJson(@PathVariable String fileName) throws IOException {
+        System.out.println("fileName = " + fileName);
+        String filePath = fileUploadPath + "/processed/json/" + fileName;  // 替换为实际的文件路径
+        System.out.println("filePath = " + filePath);
 
+        // 读取文件内容
+        Path jsonFilePath = Paths.get(filePath);
+        byte[] fileBytes = java.nio.file.Files.readAllBytes(jsonFilePath);
+        String jsonContent = new String(fileBytes);
+
+
+        Result result = new Result();
+        result.setJsonContent(jsonContent);
+
+        // 返回结果
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
 
 
     /**
@@ -399,13 +445,15 @@ public class FileController {
             while (true) {
                 while (inputStream.available() > 0) {
                     int i = inputStream.read(buffer, 0, 1024);
-                    if (i < 0){
+                    if (i < 0) {
                         break;
                     }
                     System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
                 }
                 if (channel.isClosed()) {
-                    if (inputStream.available() > 0) {continue;}
+                    if (inputStream.available() > 0) {
+                        continue;
+                    }
                     System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
                     break;
                 }

@@ -34,7 +34,7 @@ mybatis-plus:
 
 files:
   upload:
-    path: C:/Users/Jiaoshou/Desktop/WPFS-BOOT/files/    # 文件上传路径
+    path: C:/Users/Jiaoshou/Desktop/WPFS-BOOT/files    # 文件上传路径
 
 
 #开放端点用于SpringBoot Admin的监控
