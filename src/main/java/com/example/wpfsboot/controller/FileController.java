@@ -66,17 +66,24 @@ public class FileController {
      */
     @PostMapping("/upload")
     public String upload(@RequestParam MultipartFile file) throws IOException {
+
+        if (file.isEmpty()) {
+            // 处理文件为空的情况
+            return "redirect:/uploadError";
+        }
+
         String originalFilename = file.getOriginalFilename();
+        System.out.println("originalFilename: " + originalFilename);
         String type = FileUtil.extName(originalFilename);
         long size = file.getSize();
 
         // 定义一个文件唯一的标识码
-        //String fileUUID = IdUtil.fastSimpleUUID() + StrUtil.DOT + type;
-        String fileUUID = file.getOriginalFilename();
+        String fileUUID = IdUtil.fastSimpleUUID() + StrUtil.DOT + type;
 
+        System.out.println("fileUUID: " + fileUUID);
 
         // 上传文件的路径
-        File uploadFile = new File(fileUploadPath + "/origin/csv/" + fileUUID);
+        File uploadFile = new File(fileUploadPath + "/origin/csv/" + originalFilename);
 
 
         String jsonFolderPath = fileUploadPath + "/origin/json/";
@@ -106,8 +113,8 @@ public class FileController {
 
         String url;
         // 获取文件的md5
-        //String md5 = SecureUtil.md5(file.getInputStream());
-        String md5 = file.getOriginalFilename();
+        String md5 = SecureUtil.md5(file.getInputStream());
+        //String md5 = file.getOriginalFilename();
 
         // 从数据库查询是否存在相同的记录
         Files dbFiles = getFileByMd5(md5);
@@ -154,7 +161,7 @@ public class FileController {
             }
 
             // 数据库若不存在重复文件，则不删除刚才上传的文件
-            url = "http://" + serverIp + ":7070/file/" + fileUUID;
+            url = "http://" + serverIp + ":7070/file/origin/csv/" + originalFilename;
         }
 
 
@@ -326,7 +333,7 @@ public class FileController {
     @PostMapping("/forecast")
     public Result forecast(@RequestBody String fileName) {
 
-        System.out.println("fileName = " + fileName);
+        System.out.println("预测的文件：" + fileName);
 
         String host = "10.101.240.60"; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
