@@ -12,6 +12,7 @@ import com.example.wpfsboot.entity.Files;
 import com.example.wpfsboot.mapper.FileMapper;
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -21,11 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,6 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
-import java.io.InputStream;
 /**
  * 文件上传相关接口
  */
@@ -72,20 +70,23 @@ public class FileController {
             return "redirect:/uploadError";
         }
 
+        // 获取文件的原始名称
         String originalFilename = file.getOriginalFilename();
         System.out.println("originalFilename: " + originalFilename);
+
+        // 获取文件的类型，以“.”作为标识
         String type = FileUtil.extName(originalFilename);
         long size = file.getSize();
 
         // 定义一个文件唯一的标识码
         String fileUUID = IdUtil.fastSimpleUUID() + StrUtil.DOT + type;
-
         System.out.println("fileUUID: " + fileUUID);
 
         // 上传文件的路径
         File uploadFile = new File(fileUploadPath + "/origin/csv/" + originalFilename);
 
 
+        // 创建JSON文件夹
         String jsonFolderPath = fileUploadPath + "/origin/json/";
 
         // 创建JSON文件夹
@@ -121,8 +122,45 @@ public class FileController {
         if (dbFiles != null) {
             url = dbFiles.getUrl();
         } else {
-            // 上传文件到磁盘
-            file.transferTo(uploadFile);
+
+
+            try (InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+                 CSVReader csvReader = new CSVReader(inputStreamReader);
+                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(byteArrayOutputStream))) {
+
+                // 读取CSV文件的第一行字段名称
+                String[] header = csvReader.readNext();
+
+                // 修改字段名称
+                for (int i = 0; i < header.length; i++) {
+                    if ("ROUND(A.WS,1)".equals(header[i])) {
+                        header[i] = "AWS";
+                    }
+                    if ("ROUND(A.POWER,0)".equals(header[i])) {
+                        header[i] = "APOWER";
+                    }
+                }
+
+                // 写入修改后的字段名称
+                csvWriter.writeNext(header);
+
+                // 读取剩余行数据并写入输出
+                String[] nextLine;
+                while ((nextLine = csvReader.readNext()) != null) {
+                    csvWriter.writeNext(nextLine);
+                }
+
+                // 将修改后的数据写入文件
+                try (OutputStream outputStream = new FileOutputStream("files/origin/csv/"+originalFilename)) {
+                    outputStream.write(byteArrayOutputStream.toByteArray());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+//            // 上传文件到磁盘
+//            file.transferTo(uploadFile);
 
             // 将csv文件转为json文件
             try (CSVReader reader = new CSVReader(new FileReader(uploadFile))) {
