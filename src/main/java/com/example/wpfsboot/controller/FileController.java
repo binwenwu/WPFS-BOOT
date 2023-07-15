@@ -402,9 +402,75 @@ public class FileController {
     }
 
 
-    // 预测
-    @PostMapping("/forecast")
-    public Result forecast(@RequestBody String fileName) {
+    /**
+     * 预处理
+     * @param fileName
+     * @return
+     */
+    @PostMapping("/process")
+    public Result process(@RequestBody String fileName) {
+
+        System.out.println("预处理的文件：" + fileName);
+
+        String host = "10.101.240.60"; // 远程服务器IP地址
+        String user = "root"; // 远程服务器用户名
+        String password = "jieshuyuedui"; // 远程服务器密码
+        // 要执行的命令
+        StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/;pwd;");
+        command.append("ls -la;");
+
+        try {
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+            session.setPassword(password); // 设置会话密码
+            session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+            session.connect(); // 连接会话
+
+            Channel channel = session.openChannel("exec"); // 打开一个exec通道
+            ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+            channel.setInputStream(null);
+            ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+
+            InputStream inputStream = channel.getInputStream();
+            channel.connect(); // 连接通道
+
+            byte[] buffer = new byte[1024];
+            while (true) {
+                while (inputStream.available() > 0) {
+                    int i = inputStream.read(buffer, 0, 1024);
+                    if (i < 0) {
+                        break;
+                    }
+                    System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                }
+                if (channel.isClosed()) {
+                    if (inputStream.available() > 0) {
+                        continue;
+                    }
+                    System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
+                    break;
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception ee) {
+                } // 等待一秒钟
+            }
+            channel.disconnect(); // 断开通道
+            session.disconnect(); // 断开会话
+        } catch (Exception e) {
+            e.printStackTrace(); // 输出错误信息
+        }
+
+        return Result.success();
+    }
+
+    /**
+     * 预测
+     * @param fileName
+     * @return
+     */
+    @PostMapping("/predict")
+    public Result predict(@RequestBody String fileName) {
 
         System.out.println("预测的文件：" + fileName);
 
