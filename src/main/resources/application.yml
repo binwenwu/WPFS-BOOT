@@ -1,5 +1,5 @@
 server:
-  ip: localhost
+  ip: 10.101.240.60
   port: 7070
 
 spring:
@@ -19,7 +19,7 @@ spring:
   boot:
     admin:
       client:
-        url: http://localhost:7777  # SpringBoot Admin的服务端地址
+        url: http://10.101.240.60:7777  # SpringBoot Admin的服务端地址
         instance:
           prefer-ip: true # 基于IP地址进行服务器注册，默认域名注册
   application:
@@ -34,7 +34,7 @@ mybatis-plus:
 
 files:
   upload:
-    path: C:/Users/Jiaoshou/Desktop/WPFS-BOOT/files    # 文件上传路径
+    path: /home/wbw/wpfs/algorithm/submission75254/infile    # 文件上传路径
 
 
 #开放端点用于SpringBoot Admin的监控

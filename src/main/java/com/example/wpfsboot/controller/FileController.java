@@ -135,50 +135,50 @@ public class FileController {
             file.transferTo(uploadFile);
 
             // 将csv文件转为json文件
-            try (CSVReader reader = new CSVReader(new FileReader(uploadFile))) {
-                List<String[]> csvData = reader.readAll();
-                List<Object> jsonData = new ArrayList<>();
-
-                // Assuming the first row of the CSV file contains column headers
-                String[] headers = csvData.get(0);
-
-                // Convert each row to a JSON object
-                for (int i = 1; i < csvData.size(); i++) {
-                    String[] row = csvData.get(i);
-                    // Create a Map or a custom class to represent each row as JSON
-                    // For simplicity, using a Map here
-                    // You can define your own class and populate its attributes if needed
-                    // Here, we assume that the CSV has the same number of columns as headers
-                    // If not, you need to handle that accordingly
-                    // For example, skipping rows with different lengths or filling with default values
-                    // before converting to JSON
-                    Map<String, String> rowData = new HashMap<>();
-                    for (int j = 0; j < headers.length; j++) {
-                        String header = headers[j];
-                        String value = row[j];
-
-                        // 修改字段名称
-                        if ("ROUND(A.WS,1)".equals(header)) {
-                            header = "AWS";
-                        }
-                        if ("ROUND(A.POWER,0)".equals(header)) {
-                            header = "APOWER";
-                        }
-                        rowData.put(header, value);
-                    }
-                    jsonData.add(rowData);
-                }
-
-                // Convert the JSON data to a JSON string
-                String jsonString = new Gson().toJson(jsonData);
-
-                // Write the JSON string to a file
-                try (FileWriter writer = new FileWriter(jsonFilePath)) {
-                    writer.write(jsonString);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//            try (CSVReader reader = new CSVReader(new FileReader(uploadFile))) {
+//                List<String[]> csvData = reader.readAll();
+//                List<Object> jsonData = new ArrayList<>();
+//
+//                // Assuming the first row of the CSV file contains column headers
+//                String[] headers = csvData.get(0);
+//
+//                // Convert each row to a JSON object
+//                for (int i = 1; i < csvData.size(); i++) {
+//                    String[] row = csvData.get(i);
+//                    // Create a Map or a custom class to represent each row as JSON
+//                    // For simplicity, using a Map here
+//                    // You can define your own class and populate its attributes if needed
+//                    // Here, we assume that the CSV has the same number of columns as headers
+//                    // If not, you need to handle that accordingly
+//                    // For example, skipping rows with different lengths or filling with default values
+//                    // before converting to JSON
+//                    Map<String, String> rowData = new HashMap<>();
+//                    for (int j = 0; j < headers.length; j++) {
+//                        String header = headers[j];
+//                        String value = row[j];
+//
+//                        // 修改字段名称
+//                        if ("ROUND(A.WS,1)".equals(header)) {
+//                            header = "AWS";
+//                        }
+//                        if ("ROUND(A.POWER,0)".equals(header)) {
+//                            header = "APOWER";
+//                        }
+//                        rowData.put(header, value);
+//                    }
+//                    jsonData.add(rowData);
+//                }
+//
+//                // Convert the JSON data to a JSON string
+//                String jsonString = new Gson().toJson(jsonData);
+//
+//                // Write the JSON string to a file
+//                try (FileWriter writer = new FileWriter(jsonFilePath)) {
+//                    writer.write(jsonString);
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 
             // 数据库若不存在重复文件，则不删除刚才上传的文件
             url = "http://" + serverIp + ":7070/file/" + originalFilename;
