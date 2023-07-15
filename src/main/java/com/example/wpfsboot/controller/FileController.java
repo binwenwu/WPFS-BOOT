@@ -407,8 +407,8 @@ public class FileController {
      * @param fileName
      * @return
      */
-    @PostMapping("/process")
-    public Result process(@RequestBody String fileName) {
+    @PostMapping("/preprocess")
+    public Result preprocess(@RequestBody String fileName) {
 
         System.out.println("预处理的文件：" + fileName);
 
