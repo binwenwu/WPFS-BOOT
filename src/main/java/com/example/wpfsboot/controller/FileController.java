@@ -131,42 +131,6 @@ public class FileController {
         } else {
 
 
-
-//            try (InputStreamReader inputStreamReader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
-//                 CSVReader csvReader = new CSVReader(inputStreamReader);
-//                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//                 CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(byteArrayOutputStream))) {
-//
-//                // 读取CSV文件的第一行字段名称
-//                String[] header = csvReader.readNext();
-//
-//                // 修改字段名称
-//                for (int i = 0; i < header.length; i++) {
-//                    if ("ROUND(A.WS,1)".equals(header[i])) {
-//                        header[i] = "AWS";
-//                    }
-//                    if ("ROUND(A.POWER,0)".equals(header[i])) {
-//                        header[i] = "APOWER";
-//                    }
-//                }
-//
-//                // 写入修改后的字段名称
-//                csvWriter.writeNext(header);
-//
-//                // 读取剩余行数据并写入输出
-//                String[] nextLine;
-//                while ((nextLine = csvReader.readNext()) != null) {
-//                    csvWriter.writeNext(nextLine);
-//                }
-//
-//                // 将修改后的数据写入文件
-//                try (OutputStream outputStream = new FileOutputStream("files/origin/csv/" + originalFilename)) {
-//                    outputStream.write(byteArrayOutputStream.toByteArray());
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-
             // 上传文件到磁盘
             file.transferTo(uploadFile);
 
@@ -200,7 +164,6 @@ public class FileController {
                         if ("ROUND(A.POWER,0)".equals(header)) {
                             header = "APOWER";
                         }
-
                         rowData.put(header, value);
                     }
                     jsonData.add(rowData);
@@ -252,7 +215,7 @@ public class FileController {
 
 
     /**
-     * 获取处理后json文件内容
+     * 获取原始json文件内容
      *
      * @param fileName
      * @return
@@ -279,7 +242,7 @@ public class FileController {
 
 
     /**
-     * 获取原始json文件内容
+     * TODO 获取预处理后json文件内容
      *
      * @param fileName
      * @return
@@ -306,26 +269,52 @@ public class FileController {
 
 
     /**
-     * 文件下载接口   http://localhost:7070/file/{fileUUID}
-     *
-     * @param fileUUID
+     * TODO 获取预测后json文件内容
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    @GetMapping("/predicted/json/{fileName}")
+    public ResponseEntity<Result> getPredictedJson(@PathVariable String fileName) throws IOException {
+        System.out.println("fileName = " + fileName);
+        String filePath = fileUploadPath + "/predicted/json/" + fileName;  // 替换为实际的文件路径
+        System.out.println("filePath = " + filePath);
+
+        // 读取文件内容
+        Path jsonFilePath = Paths.get(filePath);
+        byte[] fileBytes = java.nio.file.Files.readAllBytes(jsonFilePath);
+        String jsonContent = new String(fileBytes);
+
+
+        Result result = new Result();
+        result.setJsonContent(jsonContent);
+
+        // 返回结果
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+
+    /**
+     * TODO 下载预测后的csv文件
+     * @param fileName
      * @param response
      * @throws IOException
      */
-    @GetMapping("/{fileUUID}")
-    public void download(@PathVariable String fileUUID, HttpServletResponse response) throws IOException {
+    @GetMapping("/{fileName}")
+    public void download(@PathVariable String fileName, HttpServletResponse response) throws IOException {
         // 根据文件的唯一标识码获取文件
-        File uploadFile = new File(fileUploadPath + fileUUID);
+        File uploadFile = new File(fileUploadPath + fileName);
         // 设置输出流的格式
-        ServletOutputStream os = response.getOutputStream();
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileUUID, "UTF-8"));
-        response.setContentType("application/octet-stream");
+        ServletOutputStream os = response.getOutputStream();//获取输出流
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));//设置文件名
+        response.setContentType("application/octet-stream");//设置类型
 
         // 读取文件的字节流
         os.write(FileUtil.readBytes(uploadFile));
-        os.flush();
-        os.close();
+        os.flush();//刷新
+        os.close();//关闭
     }
+
 
 
     /**
@@ -423,7 +412,7 @@ public class FileController {
         String user = "root"; // 远程服务器用户名
         String password = "jieshuyuedui"; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254;python predict.py;");
+        StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/;python predict.py;");
         command.append("ls -la;");
 
         try {
