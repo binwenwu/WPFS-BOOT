@@ -419,6 +419,7 @@ public class FileController {
         StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/;pwd;");
         command.append("ls -la;");
 
+
         try {
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
