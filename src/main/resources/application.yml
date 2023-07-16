@@ -1,6 +1,7 @@
 server:
   ip: 10.101.240.60
   port: 7070
+  password: jieshuyuedui
 
 spring:
   datasource:

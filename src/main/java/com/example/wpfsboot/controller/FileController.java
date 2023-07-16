@@ -56,6 +56,9 @@ public class FileController {
     @Value("${server.ip}")
     private String serverIp;
 
+    @Value(("${server.password}"))
+    private String serverPassword;
+
     @Resource
     private FileMapper fileMapper;
 
@@ -91,23 +94,21 @@ public class FileController {
         System.out.println("fileUUID: " + fileUUID);
 
         // 上传文件的路径
-        File uploadFile = new File(fileUploadPath + "/" + originalFilename);
+        File uploadFile = new File(fileUploadPath + "/infile/" + originalFilename);
 
 
         // 创建JSON文件夹
-        String jsonFolderPath = fileUploadPath + "/";
-
-        // 创建JSON文件夹
-        File jsonFolder = new File(jsonFolderPath);
-        if (!jsonFolder.exists()) {
-            boolean created = jsonFolder.mkdirs();
-            if (!created) {
-                // JSON文件夹创建失败，处理异常情况
-                // 可以抛出异常或打印错误日志
-                System.err.println("Failed to create JSON folder.");
-            }
-        }
-        String jsonFilePath = jsonFolderPath + FileUtil.mainName(originalFilename) + ".json";
+//        String jsonFolderPath = fileUploadPath + "/";
+//        File jsonFolder = new File(jsonFolderPath);
+//        if (!jsonFolder.exists()) {
+//            boolean created = jsonFolder.mkdirs();
+//            if (!created) {
+//                // JSON文件夹创建失败，处理异常情况
+//                // 可以抛出异常或打印错误日志
+//                System.err.println("Failed to create JSON folder.");
+//            }
+//        }
+//        String jsonFilePath = jsonFolderPath + FileUtil.mainName(originalFilename) + ".json";
 
 
 //        String jsonFilePath = fileUploadPath + "origin/json/" + FileUtil.mainName(originalFilename) + ".json";
@@ -221,8 +222,8 @@ public class FileController {
      * @return
      * @throws IOException
      */
-    @GetMapping("/origin/json/{fileName}")
-    public ResponseEntity<Result> getOriginJson(@PathVariable String fileName) throws IOException {
+    @PostMapping("/origin/json")
+    public ResponseEntity<Result> getOriginJson(@RequestBody String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
         String filePath = fileUploadPath +"/infile/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
@@ -235,6 +236,7 @@ public class FileController {
 
         Result result = new Result();
         result.setJsonContent(jsonContent);
+        result.setCode(Constants.CODE_200);
 
         // 返回结果
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -248,8 +250,8 @@ public class FileController {
      * @return
      * @throws IOException
      */
-    @GetMapping("/processed/json/{fileName}")
-    public ResponseEntity<Result> getProcessedJson(@PathVariable String fileName) throws IOException {
+    @PostMapping("/processed/json")
+    public ResponseEntity<Result> getProcessedJson(@RequestBody String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
         String filePath = fileUploadPath +"/outfile/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
@@ -262,7 +264,7 @@ public class FileController {
 
         Result result = new Result();
         result.setJsonContent(jsonContent);
-
+        result.setCode(Constants.CODE_200);
         // 返回结果
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -274,8 +276,8 @@ public class FileController {
      * @return
      * @throws IOException
      */
-    @GetMapping("/predicted/json/{fileName}")
-    public ResponseEntity<Result> getPredictedJson(@PathVariable String fileName) throws IOException {
+    @PostMapping("/predicted/json")
+    public ResponseEntity<Result> getPredictedJson(@RequestBody String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
         String filePath = fileUploadPath +"/pred/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
@@ -288,7 +290,7 @@ public class FileController {
 
         Result result = new Result();
         result.setJsonContent(jsonContent);
-
+        result.setCode(Constants.CODE_200);
         // 返回结果
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -412,9 +414,9 @@ public class FileController {
 
         System.out.println("预处理的文件：" + fileName);
 
-        String host = "10.101.240.60"; // 远程服务器IP地址
+        String host = serverIp; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
-        String password = "jieshuyuedui"; // 远程服务器密码
+        String password = serverPassword; // 远程服务器密码
         // 要执行的命令
         StringBuilder command = new StringBuilder("conda activate py37;cd "+fileUploadPath+";python data_preprocess.py --file_name " + fileName + ";");
         command.append("ls -la;");
@@ -475,9 +477,9 @@ public class FileController {
 
         System.out.println("预测的文件：" + fileName);
 
-        String host = "10.101.240.60"; // 远程服务器IP地址
+        String host = serverIp; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
-        String password = "jieshuyuedui"; // 远程服务器密码
+        String password = serverPassword; // 远程服务器密码
         // 要执行的命令
         StringBuilder command = new StringBuilder("conda activate py37;cd "+fileUploadPath+";python predict.py --file_name " + fileName + ";");
         command.append("ls -la;");
