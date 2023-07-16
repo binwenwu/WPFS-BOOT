@@ -56,6 +56,9 @@ public class FileController {
     @Value("${server.ip}")
     private String serverIp;
 
+    @Value("${server.port}")
+    private String serverPort;
+
     @Value(("${server.password}"))
     private String serverPassword;
 
@@ -182,7 +185,7 @@ public class FileController {
 //            }
 
             // 数据库若不存在重复文件，则不删除刚才上传的文件
-            url = "http://" + serverIp + ":7070/file/" + originalFilename;
+            url = "http://" + serverIp + ":" + serverPort + "/file/" + originalFilename;
         }
 
 
@@ -225,7 +228,7 @@ public class FileController {
     @PostMapping("/origin/json")
     public ResponseEntity<Result> getOriginJson(@RequestBody String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
-        String filePath = fileUploadPath +"/infile/" + fileName;  // 替换为实际的文件路径
+        String filePath = fileUploadPath + "/infile/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
 
         // 读取文件内容
@@ -253,7 +256,7 @@ public class FileController {
     @PostMapping("/processed/json")
     public ResponseEntity<Result> getProcessedJson(@RequestBody String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
-        String filePath = fileUploadPath +"/outfile/" + fileName;  // 替换为实际的文件路径
+        String filePath = fileUploadPath + "/outfile/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
 
         // 读取文件内容
@@ -272,6 +275,7 @@ public class FileController {
 
     /**
      * TODO 获取预测后json文件内容
+     *
      * @param fileName
      * @return
      * @throws IOException
@@ -279,7 +283,7 @@ public class FileController {
     @PostMapping("/predicted/json")
     public ResponseEntity<Result> getPredictedJson(@RequestBody String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
-        String filePath = fileUploadPath +"/pred/" + fileName;  // 替换为实际的文件路径
+        String filePath = fileUploadPath + "/pred/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
 
         // 读取文件内容
@@ -298,6 +302,7 @@ public class FileController {
 
     /**
      * TODO 下载预测后的csv文件
+     *
      * @param fileName
      * @param response
      * @throws IOException
@@ -316,7 +321,6 @@ public class FileController {
         os.flush();//刷新
         os.close();//关闭
     }
-
 
 
     /**
@@ -406,6 +410,7 @@ public class FileController {
 
     /**
      * 预处理
+     *
      * @param fileName
      * @return
      */
@@ -418,7 +423,7 @@ public class FileController {
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd "+fileUploadPath+";python data_preprocess.py --file_name " + fileName + ";");
+        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + fileName + ";");
         command.append("ls -la;");
 
 
@@ -469,6 +474,7 @@ public class FileController {
 
     /**
      * 预测
+     *
      * @param fileName
      * @return
      */
@@ -481,7 +487,7 @@ public class FileController {
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd "+fileUploadPath+";python predict.py --file_name " + fileName + ";");
+        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python predict.py --file_name " + fileName + ";");
         command.append("ls -la;");
 
         try {
