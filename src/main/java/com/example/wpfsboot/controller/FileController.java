@@ -416,7 +416,7 @@ public class FileController {
         String user = "root"; // 远程服务器用户名
         String password = "jieshuyuedui"; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254;python data_preprocess.py --file_name " + fileName + ";");
+        StringBuilder command = new StringBuilder("conda activate py37;cd "+fileUploadPath+";python data_preprocess.py --file_name " + fileName + ";");
         command.append("ls -la;");
 
 
@@ -479,7 +479,7 @@ public class FileController {
         String user = "root"; // 远程服务器用户名
         String password = "jieshuyuedui"; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/;python predict.py --file_name " + fileName + ";");
+        StringBuilder command = new StringBuilder("conda activate py37;cd "+fileUploadPath+";python predict.py --file_name " + fileName + ";");
         command.append("ls -la;");
 
         try {
