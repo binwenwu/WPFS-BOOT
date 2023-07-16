@@ -91,11 +91,11 @@ public class FileController {
         System.out.println("fileUUID: " + fileUUID);
 
         // 上传文件的路径
-        File uploadFile = new File(fileUploadPath + "/origin/csv/" + originalFilename);
+        File uploadFile = new File(fileUploadPath + "/" + originalFilename);
 
 
         // 创建JSON文件夹
-        String jsonFolderPath = fileUploadPath + "/origin/json/";
+        String jsonFolderPath = fileUploadPath + "/";
 
         // 创建JSON文件夹
         File jsonFolder = new File(jsonFolderPath);
@@ -224,7 +224,7 @@ public class FileController {
     @GetMapping("/origin/json/{fileName}")
     public ResponseEntity<Result> getOriginJson(@PathVariable String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
-        String filePath = fileUploadPath + "/origin/json/" + fileName;  // 替换为实际的文件路径
+        String filePath = fileUploadPath +"/infile/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
 
         // 读取文件内容
@@ -251,7 +251,7 @@ public class FileController {
     @GetMapping("/processed/json/{fileName}")
     public ResponseEntity<Result> getProcessedJson(@PathVariable String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
-        String filePath = fileUploadPath + "/processed/json/" + fileName;  // 替换为实际的文件路径
+        String filePath = fileUploadPath +"/outfile/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
 
         // 读取文件内容
@@ -277,7 +277,7 @@ public class FileController {
     @GetMapping("/predicted/json/{fileName}")
     public ResponseEntity<Result> getPredictedJson(@PathVariable String fileName) throws IOException {
         System.out.println("fileName = " + fileName);
-        String filePath = fileUploadPath + "/predicted/json/" + fileName;  // 替换为实际的文件路径
+        String filePath = fileUploadPath +"/pred/" + fileName;  // 替换为实际的文件路径
         System.out.println("filePath = " + filePath);
 
         // 读取文件内容
