@@ -301,16 +301,58 @@ public class FileController {
 
 
     /**
-     * TODO 下载预测后的csv文件
+     * @param fileName
+     * @param response
+     * @throws IOException
+     */
+    @GetMapping("/infile/{fileName}")
+    public void downloadInFile(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+        // 根据文件的唯一标识码获取文件
+        File uploadFile = new File(fileUploadPath +"/infile/"+fileName);
+        // 设置输出流的格式
+        ServletOutputStream os = response.getOutputStream();//获取输出流
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));//设置文件名
+        response.setContentType("application/octet-stream");//设置类型
+
+        // 读取文件的字节流
+        os.write(FileUtil.readBytes(uploadFile));
+        os.flush();//刷新
+        os.close();//关闭
+    }
+
+
+    /**
      *
      * @param fileName
      * @param response
      * @throws IOException
      */
-    @GetMapping("/{fileName}")
-    public void download(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+    @GetMapping("/outfile/{fileName}")
+    public void downloadOutFile(@PathVariable String fileName, HttpServletResponse response) throws IOException {
         // 根据文件的唯一标识码获取文件
-        File uploadFile = new File(fileUploadPath + fileName);
+        File uploadFile = new File(fileUploadPath +"/outfile/"+fileName);
+        // 设置输出流的格式
+        ServletOutputStream os = response.getOutputStream();//获取输出流
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));//设置文件名
+        response.setContentType("application/octet-stream");//设置类型
+
+        // 读取文件的字节流
+        os.write(FileUtil.readBytes(uploadFile));
+        os.flush();//刷新
+        os.close();//关闭
+    }
+
+
+    /**
+     *
+     * @param fileName
+     * @param response
+     * @throws IOException
+     */
+    @GetMapping("/pred/{fileName}")
+    public void downloadPred(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+        // 根据文件的唯一标识码获取文件
+        File uploadFile = new File(fileUploadPath +"/pred/"+fileName);
         // 设置输出流的格式
         ServletOutputStream os = response.getOutputStream();//获取输出流
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));//设置文件名
