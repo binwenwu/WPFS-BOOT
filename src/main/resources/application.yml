@@ -1,7 +1,21 @@
+#chatgpt配置
+chatgpt:
+  token: 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
+  proxy-host: ${server.ip}
+  proxy-port: 61704
+  model: text-davinci-003 #可选
+  chat-model: gpt-3.5-turbo #可选
+  retries: 10 #可选，默认为5
+  session-expiration-time: 30 #可选，不填则会话永不过期
+
 server:
-  ip: 10.101.240.60
+  ip: localhost
   port: 7070
   password: jieshuyuedui
+
+files:
+  upload:
+    path: /home/wpfs/algorithm/submission75254    # 文件上传路径
 
 spring:
   datasource:
@@ -33,10 +47,6 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-files:
-  upload:
-    path: /home/wpfs/algorithm/submission75254    # 文件上传路径
-
 
 #开放端点用于SpringBoot Admin的监控
 management:
@@ -53,4 +63,7 @@ management:
       metrics:
         enabled: true
     enabled-by-default: true  # 开启所有监控端点
+
+
+
 

@@ -2,6 +2,7 @@ package com.example.wpfsboot.utils;
 
 import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.OutputFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Collections;
 
@@ -16,8 +17,12 @@ public class CodeGenerator {
         generate();
     }
 
+
+    @Value("${server.ip}")
+    private static String serverIp;
+
     private static void generate() {
-        FastAutoGenerator.create("jdbc:mysql://125.220.153.23:31621/wpfs?serverTimezone=GMT%2b8", "root", "VubCMiHvT1")
+        FastAutoGenerator.create("jdbc:mysql://"+serverIp+":31621/wpfs?serverTimezone=GMT%2b8", "root", "VubCMiHvT1")
                 .globalConfig(builder -> {
                     builder.author("结束乐队") // 设置作者
                             .enableSwagger() // 开启 swagger 模式
