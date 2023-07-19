@@ -1,5 +1,6 @@
 package com.example.wpfsboot.controller;
 
+import com.example.wpfsboot.common.Constants;
 import com.example.wpfsboot.common.Result;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.embedding.EmbeddingRequest;
@@ -21,6 +22,8 @@ import io.github.asleepyfish.util.OpenAiUtils;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -52,8 +55,11 @@ public class ChatGPTController {
      * @return 答案
      */
     @PostMapping("/postChat")
-    public String postChat(@RequestBody String question) {
-        return OpenAiUtils.createChatCompletion(question).get(0);
+    public ResponseEntity<Result> postChat(@RequestBody String question) {
+        Result result = new Result();
+        result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
+        result.setCode(Constants.CODE_200);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     /**

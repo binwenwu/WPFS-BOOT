@@ -21,20 +21,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import java.util.Arrays;
 
+
 @SpringBootTest
 class WpfsBootApplicationTests {
 
-    @Value("${server.ip}")
-    private static String serverIp;
-
-    @Value("${chatgpt.proxy-host}")
-    private static int proxyPort;
 
     @Test
     public void chat() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         System.out.println(openAiProxyService.chatCompletion("Go写个helloword程序"));
@@ -43,8 +39,8 @@ class WpfsBootApplicationTests {
     @Test
     public void streamChat() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         openAiProxyService.createStreamChatCompletion("杭州旅游攻略");
@@ -53,8 +49,8 @@ class WpfsBootApplicationTests {
     @Test
     public void createImages() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         System.out.println(openAiProxyService.createImages("大白狗"));
@@ -63,8 +59,8 @@ class WpfsBootApplicationTests {
     @Test
     public void billing() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         String monthUsage = openAiProxyService.billingUsage("2023-07-01", "2023-08-01");
@@ -86,8 +82,8 @@ class WpfsBootApplicationTests {
     @Test
     public void model() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         System.out.println("models列表：" + openAiProxyService.listModels());
@@ -98,8 +94,8 @@ class WpfsBootApplicationTests {
     @Test
     public void edit() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         String input = "What day of the wek is it?";
@@ -119,8 +115,8 @@ class WpfsBootApplicationTests {
     @Test
     public void embeddings() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         String text = "Once upon a time";
@@ -137,8 +133,8 @@ class WpfsBootApplicationTests {
     @Test
     public void transcription() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         String filePath = "src/main/resources/audio/想象之中-许嵩.mp3";
@@ -150,8 +146,8 @@ class WpfsBootApplicationTests {
     @Test
     public void translation() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         String filePath = "src/main/resources/audio/想象之中-许嵩.mp3";
@@ -163,8 +159,8 @@ class WpfsBootApplicationTests {
     @Test
     public void createImageEdit() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         CreateImageEditRequest createImageEditRequest = CreateImageEditRequest.builder().prompt("A sunlit indoor lounge area with a pool containing a flamingo")
@@ -176,8 +172,8 @@ class WpfsBootApplicationTests {
     @Test
     public void createImageVariation() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         CreateImageVariationRequest createImageVariationRequest = CreateImageVariationRequest.builder()
@@ -192,8 +188,8 @@ class WpfsBootApplicationTests {
     @Test
     public void files() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         // 上传文件
@@ -211,8 +207,8 @@ class WpfsBootApplicationTests {
     @Test
     public void fileTune() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         // 创建微调
@@ -236,8 +232,8 @@ class WpfsBootApplicationTests {
     @Test
     public void moderation() {
         ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
-                .proxyHost(serverIp)
-                .proxyPort(proxyPort)
+                .proxyHost("localhost")
+                .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         // 创建moderation

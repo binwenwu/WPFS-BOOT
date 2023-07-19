@@ -5,8 +5,8 @@ chatgpt:
   proxy-port: 61704
   model: text-davinci-003 #可选
   chat-model: gpt-3.5-turbo #可选
-  retries: 10 #可选，默认为5
-  session-expiration-time: 30 #可选，不填则会话永不过期
+  retries: 20 #可选，默认为5
+  session-expiration-time: 3000 #可选，不填则会话永不过期
 
 server:
   ip: localhost
