@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wpfsboot.common.Constants;
 import com.example.wpfsboot.common.Result;
 import com.example.wpfsboot.entity.Files;
+import com.example.wpfsboot.entity.ParamsForm;
+import com.example.wpfsboot.entity.PredictParams;
 import com.example.wpfsboot.mapper.FileMapper;
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
@@ -459,15 +461,15 @@ public class FileController {
      * @return
      */
     @PostMapping("/preprocess")
-    public Result preprocess(@RequestBody String fileName) {
+    public Result preprocess(@RequestBody ParamsForm paramsForm) {
 
-        System.out.println("预处理的文件：" + fileName);
+        System.out.println("预处理的文件：" + paramsForm.getFileName());
 
         String host = serverIp; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + fileName + ";");
+        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method "+paramsForm.getResampleMethod()+" --outlier_detection "+paramsForm.getOutlierDetection());
         command.append("ls -la;");
 
 
@@ -523,15 +525,15 @@ public class FileController {
      * @return
      */
     @PostMapping("/predict")
-    public Result predict(@RequestBody String fileName) {
+    public Result predict(@RequestBody PredictParams predictParams) {
 
-        System.out.println("预测的文件：" + fileName);
+        System.out.println("预测的文件：" + predictParams.getFileName());
 
         String host = serverIp; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
         // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python predict.py --file_name " + fileName + ";");
+        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python predict.py --file_name " + predictParams.getFileName() + " --start_time "+predictParams.getStartTime()+" --end_time "+predictParams.getEndTime());
         command.append("ls -la;");
 
         try {

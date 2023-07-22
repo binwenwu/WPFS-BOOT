@@ -2,14 +2,14 @@
 chatgpt:
   token: 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
   proxy-host: ${server.ip}
-  proxy-port: 61704
+  proxy-port: 7890
   model: text-davinci-003 #可选
   chat-model: gpt-3.5-turbo #可选
   retries: 20 #可选，默认为5
   session-expiration-time: 3000 #可选，不填则会话永不过期
 
 server:
-  ip: localhost
+  ip: 10.101.240.60
   port: 7070
   password: jieshuyuedui
 

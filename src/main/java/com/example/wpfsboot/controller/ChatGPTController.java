@@ -253,7 +253,7 @@ public class ChatGPTController {
         // 列出微调事件
         System.out.println("列出微调事件：" + OpenAiUtils.listFineTuneEvents(""));
         // 删除微调
-        System.out.println("删除微调信息：" + OpenAiUtils.deleteFineTune(""));
+        System.out.println("删除微调信s息：" + OpenAiUtils.deleteFineTune(""));
     }
 
     @PostMapping("/moderation")
