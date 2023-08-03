@@ -457,7 +457,7 @@ public class FileController {
     /**
      * 预处理
      *
-     * @param fileName
+     * @param paramsForm
      * @return
      */
     @PostMapping("/preprocess")
@@ -469,8 +469,9 @@ public class FileController {
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
         // 要执行的命令
+        System.out.println("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method "+paramsForm.getResampleMethod()+" --outlier_detection "+paramsForm.getOutlierDetection());
         StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method "+paramsForm.getResampleMethod()+" --outlier_detection "+paramsForm.getOutlierDetection());
-        command.append("ls -la;");
+//        command.append("ls -la;");
 
 
         try {
@@ -488,10 +489,10 @@ public class FileController {
             InputStream inputStream = channel.getInputStream();
             channel.connect(); // 连接通道
 
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[10240];
             while (true) {
                 while (inputStream.available() > 0) {
-                    int i = inputStream.read(buffer, 0, 1024);
+                    int i = inputStream.read(buffer, 0, 10240);
                     if (i < 0) {
                         break;
                     }
@@ -515,13 +516,14 @@ public class FileController {
             e.printStackTrace(); // 输出错误信息
         }
 
+        System.out.println("预处理完成");
         return Result.success();
     }
 
     /**
      * 预测
      *
-     * @param fileName
+     * @param predictParams
      * @return
      */
     @PostMapping("/predict")
@@ -534,7 +536,7 @@ public class FileController {
         String password = serverPassword; // 远程服务器密码
         // 要执行的命令
         StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python predict.py --file_name " + predictParams.getFileName() + " --start_time "+predictParams.getStartTime()+" --end_time "+predictParams.getEndTime());
-        command.append("ls -la;");
+//        command.append("ls -la;");
 
         try {
             JSch jsch = new JSch();
