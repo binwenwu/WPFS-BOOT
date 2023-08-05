@@ -2,6 +2,11 @@ package com.example.wpfsboot.controller;
 
 import com.example.wpfsboot.common.Constants;
 import com.example.wpfsboot.common.Result;
+import com.example.wpfsboot.entity.GPTParams;
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.finetune.FineTuneRequest;
@@ -22,12 +27,17 @@ import io.github.asleepyfish.util.OpenAiUtils;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,14 +49,233 @@ import java.util.List;
 @RequestMapping("/wpfgpt")
 public class ChatGPTController {
 
+    @Value("${files.upload.path}")
+    private String fileUploadPath;
+
     @Value("${server.ip}")
     private String serverIp;
+
+    @Value("${server.port}")
+    private String serverPort;
+
+
+    @Value(("${server.password}"))
+    private String serverPassword;
+
 
     @Value("${chatgpt.proxy-host}")
     private String proxyPort;
 
     @Autowired
     private OpenAiUtils openAiUtils;
+
+
+    /**
+     *
+     * @param question
+     * @return
+     */
+    public static boolean containsCode(String question) {
+        String[] keywords = {"python", "代码", "Python"};
+
+        for (String keyword : keywords) {
+            if (question.contains(keyword)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     *
+     * @param question
+     * @return
+     */
+    public static boolean containsJudge(String question) {
+        String[] keywords = {"预处理后"};
+
+        for (String keyword : keywords) {
+            if (question.contains(keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param originalString
+     * @param startMarker
+     * @param endMarker
+     * @return
+     */
+    public static String extractBetweenMarkers(String originalString, String startMarker, String endMarker) {
+        int startIndex = originalString.indexOf(startMarker);
+        int endIndex = originalString.lastIndexOf(endMarker);
+
+        if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+            // 使用substring方法提取两个标记之间的部分
+            return originalString.substring(startIndex + startMarker.length(), endIndex);
+        } else {
+            return ""; // 如果没有找到匹配的标记则返回空字符串
+        }
+    }
+
+    public static void writePythonCodeToFile(String pythonCode, String filePath) throws IOException {
+        File file = new File(filePath);
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new FileWriter(file));
+            writer.write(pythonCode);
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
+    }
+
+    private static final String IMAGE_PATH = "/home/wpfs/algorithm/submission75254/gpt_output/"; // 图片文件所在路径
+
+    @GetMapping("/api/images/{fileName}")
+    public ResponseEntity<byte[]> getImage(@PathVariable String fileName) {
+        try {
+            String imagePath = IMAGE_PATH  + fileName.replace(".csv", ".png");
+            System.out.println("imagePath: "+imagePath);
+            byte[] imageData = readImageData(imagePath);
+            if (imageData != null) {
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.IMAGE_JPEG); // 设置图片类型，可以根据实际情况调整
+                return new ResponseEntity<>(imageData, headers, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND); // 图片不存在
+            }
+        } catch (Exception e) {
+            // 处理异常
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // 根据图片路径读取图片数据的方法
+    private byte[] readImageData(String imagePath) {
+        try {
+            Path path = Paths.get(imagePath);
+            return Files.readAllBytes(path);
+        } catch (IOException e) {
+            // 处理读取文件异常
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    /**
+     * 问答
+     * @param gptParams 问题
+     * @return 答案
+     */
+    @PostMapping("/postChat2")
+    public ResponseEntity<Result> postChat2(@RequestBody GPTParams gptParams) {
+        Result result = new Result();
+
+
+        String question = gptParams.getQuestion();
+        String fileName = gptParams.getFileName();
+
+        boolean tag1 = containsCode(question);
+        boolean tag2 = containsJudge(question);
+
+        String filePath = tag2 ? "/home/wpfs/algorithm/submission75254/outfile/"+fileName : "/home/wpfs/algorithm/submission75254/pred/"+fileName;
+
+
+        if (tag1){
+            result.setImage(false);
+            System.out.println(question);
+            result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
+        }else{
+            // 判断是否要展示图片
+            result.setImage(true);
+
+            if (tag2){
+                question = question.replace("预处理后","");
+            }else{
+                question = question.replace("预测后","");
+            }
+            String text = "我有一个csv文件，位置在"+filePath+",第一行是列名，第二行开始是数据，其中列名有：DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
+            question = text + question;
+            question = question + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/,图片名与文件名相同，请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
+            System.out.println(question);
+            result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
+            System.out.println(result.getMsg());
+
+            String pythonCode = extractBetweenMarkers(result.getMsg(), "```python", "```");
+            System.out.println(pythonCode);
+
+            String pyFileName = fileName.replace(".csv", ".py");
+            String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/" + pyFileName;
+
+            try {
+                writePythonCodeToFile(pythonCode, pyFilePath);
+                System.out.println("Python file generated successfully at: " + pyFilePath);
+            } catch (IOException e) {
+                System.err.println("Error while generating Python file: " + e.getMessage());
+            }
+
+            String host = serverIp; // 远程服务器IP地址
+            String user = "root"; // 远程服务器用户名
+            String password = serverPassword; // 远程服务器密码
+            // 要执行的命令
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./"+pyFileName+";");
+//        command.append("ls -la;");
+
+            try {
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+                session.setPassword(password); // 设置会话密码
+                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+                session.connect(); // 连接会话
+
+                Channel channel = session.openChannel("exec"); // 打开一个exec通道
+                ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+                channel.setInputStream(null);
+                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+
+                InputStream inputStream = channel.getInputStream();
+                channel.connect(); // 连接通道
+
+                byte[] buffer = new byte[1024];
+                while (true) {
+                    while (inputStream.available() > 0) {
+                        int i = inputStream.read(buffer, 0, 1024);
+                        if (i < 0) {
+                            break;
+                        }
+                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                    }
+                    if (channel.isClosed()) {
+                        if (inputStream.available() > 0) {
+                            continue;
+                        }
+                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
+                        break;
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception ee) {
+                    } // 等待一秒钟
+                }
+                channel.disconnect(); // 断开通道
+                session.disconnect(); // 断开会话
+            } catch (Exception e) {
+                e.printStackTrace(); // 输出错误信息
+            }
+        }
+
+
+        result.setCode(Constants.CODE_200);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
 
 
     /**

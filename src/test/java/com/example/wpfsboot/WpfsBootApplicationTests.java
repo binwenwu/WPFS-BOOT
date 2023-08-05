@@ -1,5 +1,7 @@
 package com.example.wpfsboot;
 
+import com.example.wpfsboot.common.Constants;
+import com.example.wpfsboot.common.Result;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.finetune.FineTuneRequest;
@@ -16,15 +18,32 @@ import io.github.asleepyfish.enums.embedding.EmbeddingModelEnum;
 import io.github.asleepyfish.enums.image.ImageResponseFormatEnum;
 import io.github.asleepyfish.enums.image.ImageSizeEnum;
 import io.github.asleepyfish.service.OpenAiProxyService;
+import io.github.asleepyfish.util.OpenAiUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
 import java.util.Arrays;
+import java.util.List;
 
 
 @SpringBootTest
 class WpfsBootApplicationTests {
 
+
+    @Test
+    public void postChat() {
+        ChatGPTProperties properties = ChatGPTProperties.builder().token("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")
+                .proxyHost("localhost")
+                .proxyPort(61704)
+                .build();
+        OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
+        String question = "假设我的linux环境下有一个csv文件,位置在/home/wpfs/algorithm/submission75254/infile/11.csv,该csv的第一行为属性名，有ROUND(A.POWER,0)和YD15两个,如何用python语言作出这两个字段的关系曲线图并输出到/home/wpfs/algorithm/submission75254/infile/这个目录下，请给我一个.py文件里面完整代码";
+        String out = openAiProxyService.chatCompletion(question).get(0);
+        System.out.println(out);
+    }
 
     @Test
     public void chat() {
@@ -33,7 +52,9 @@ class WpfsBootApplicationTests {
                 .proxyPort(61704)
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
-        System.out.println(openAiProxyService.chatCompletion("Go写个helloword程序"));
+
+        List<String> out = openAiProxyService.chatCompletion("Go写个helloword程序");
+        System.out.println(out);
     }
 
     @Test
@@ -193,7 +214,7 @@ class WpfsBootApplicationTests {
                 .build();
         OpenAiProxyService openAiProxyService = new OpenAiProxyService(properties);
         // 上传文件
-        System.out.println("上传文件信息：" + openAiProxyService.uploadFile("", ""));
+        System.out.println("上传文件信息：" + openAiProxyService.uploadFile("test", "C:\\Users\\Jiaoshou\\Desktop\\Coverage.scala"));
         // 获取文件列表
         System.out.println("文件列表：" + openAiProxyService.listFiles());
         // 获取文件信息
