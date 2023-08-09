@@ -19,22 +19,24 @@ public class Result {
     private Object data;
     private String jsonContent;
     private boolean image;
+    private boolean report;
+    private String time;
 
 
     public static Result success() {
-        return new Result(Constants.CODE_200, "", null,"",false);
+        return new Result(Constants.CODE_200, "", null,"",false,false,"");
     }
 
     public static Result success(Object data) {
-        return new Result(Constants.CODE_200, "", data,"",false);
+        return new Result(Constants.CODE_200, "", data,"",false,false,"");
     }
 
     public static Result error(String code, String msg) {
-        return new Result(code, msg, null,"",false);
+        return new Result(code, msg, null,"",false,false,"");
     }
 
     public static Result error() {
-        return new Result(Constants.CODE_500, "系统错误", null,"",false);
+        return new Result(Constants.CODE_500, "系统错误", null,"",false,false,"");
     }
 
 }

@@ -71,24 +71,29 @@ public class ChatGPTController {
 
 
     /**
-     *
      * @param question
      * @return
      */
-    public static boolean containsCode(String question) {
-        String[] keywords = {"python", "代码", "Python"};
+    public static int containsCode(String question) {
+        String[] keyword01 = {"图"};
+        String[] keyword02 = {"报表"};
 
-        for (String keyword : keywords) {
+        for (String keyword : keyword01) {
             if (question.contains(keyword)) {
-                return false;
+                return 1;
             }
         }
 
-        return true;
+        for (String keyword : keyword02) {
+            if (question.contains(keyword)) {
+                return 2;
+            }
+        }
+
+        return 3;
     }
 
     /**
-     *
      * @param question
      * @return
      */
@@ -140,8 +145,8 @@ public class ChatGPTController {
     @GetMapping("/api/images/{fileName}")
     public ResponseEntity<byte[]> getImage(@PathVariable String fileName) {
         try {
-            String imagePath = IMAGE_PATH  + fileName.replace(".csv", ".png");
-            System.out.println("imagePath: "+imagePath);
+            String imagePath = IMAGE_PATH + fileName.replace(".csv", ".png");
+            System.out.println("imagePath: " + imagePath);
             byte[] imageData = readImageData(imagePath);
             if (imageData != null) {
                 HttpHeaders headers = new HttpHeaders();
@@ -171,45 +176,56 @@ public class ChatGPTController {
 
     /**
      * 问答
+     *
      * @param gptParams 问题
      * @return 答案
      */
     @PostMapping("/postChat2")
     public ResponseEntity<Result> postChat2(@RequestBody GPTParams gptParams) {
         Result result = new Result();
+        //时间戳
+        String time = System.currentTimeMillis() + "";
+        result.setTime(time);
 
-
+        // 问题预处理
         String question = gptParams.getQuestion();
+        question = question.replace("ROUND(A.WS,1)", "AWS").replace("ROUND(A.POWER,0)", "APOWER");
         String fileName = gptParams.getFileName();
 
-        boolean tag1 = containsCode(question);
+
+        // 判断问题类型
+        int tag1 = containsCode(question);
         boolean tag2 = containsJudge(question);
+        String filePath = tag2 ? "/home/wpfs/algorithm/submission75254/outfile/" + fileName : "/home/wpfs/algorithm/submission75254/pred/" + fileName;
 
-        String filePath = tag2 ? "/home/wpfs/algorithm/submission75254/outfile/"+fileName : "/home/wpfs/algorithm/submission75254/pred/"+fileName;
 
-
-        if (tag1){
+        if (tag1 == 3) {
             result.setImage(false);
             System.out.println(question);
             result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
-        }else{
+        } else if (tag1 == 1) {
             // 判断是否要展示图片
             result.setImage(true);
 
-            if (tag2){
-                question = question.replace("预处理后","");
-            }else{
-                question = question.replace("预测后","");
+            if (tag2) {
+                question = question.replace("预处理后", "");
+            } else {
+                question = question.replace("预测后", "");
             }
-            String text = "我有一个csv文件，位置在"+filePath+",第一行是列名，第二行开始是数据，其中列名有：DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
-            question = text + question;
-            question = question + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/,图片名与文件名相同，请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
+
+
+            String text = "我有一个csv文件，位置在" + filePath + ",第一行是列名，第二行开始是数据，其中列名有：DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
+            question = text + question
+                    + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/,"
+                    + "图片名为:"+time+".png,"
+                    + "请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
+
             System.out.println(question);
             result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
             System.out.println(result.getMsg());
 
             String pythonCode = extractBetweenMarkers(result.getMsg(), "```python", "```");
-            System.out.println(pythonCode);
+//            System.out.println(pythonCode);
 
             String pyFileName = fileName.replace(".csv", ".py");
             String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/" + pyFileName;
@@ -225,7 +241,7 @@ public class ChatGPTController {
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
             // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./"+pyFileName+";");
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./" + pyFileName + ";");
 //        command.append("ls -la;");
 
             try {
@@ -269,6 +285,106 @@ public class ChatGPTController {
             } catch (Exception e) {
                 e.printStackTrace(); // 输出错误信息
             }
+        } else {
+            // 判断是否要展示报表
+            result.setReport(true);
+
+            if (tag2) {
+                question = question.replace("预处理后", "");
+            } else {
+                question = question.replace("预测后", "");
+            }
+
+// TODO GPT版本
+
+//            String text = "我有一个csv文件,位置在" + filePath + ",第一行是列名,第二行开始是数据,其中列名有: DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
+//            question = text
+//                    + "具体来说,"
+//                    + "DATATIME 为日期，如：2022/1/1  0:00:00，"
+//                    + "WINDSPEED 为天气预报的预测风速，如：0.8，"
+//                    + "PREPOWER 为风机发电预测功率，如：9225，"
+//                    + "WINDDIRECTION 为风向（0~360°)，如：326，"
+//                    + "TEMPERATURE 为温度，如：-12.8，"
+//                    + "HUMIDITY 为湿度，如：64，"
+//                    + "PRESSURE 为气压，如：867，"
+//                    + "AWS 为实际风速，如：1.4，"
+//                    + "APOWER 为实际功率，如：3112，"
+//                    + "YD15 也为实际功率，这是测量方式与APOWER有所差别，如：3112，"
+//                    + "我想针对该csv文件使用Python生成一个数据报表，"
+//                    + "报表内容的格式我想是针对数据的统计分析信息，"
+//                    + "比如：第一部分是均值，那么你就针对除了DATATIME的字段统计其均值，并以表格形式呈现，"
+//                    + "当然统计信息不止均值这一种，你可以扩充，"
+//                    + "报表输出至/home/wpfs/algorithm/submission75254/gpt_output/, 报表名与文件名相同,报表文件的格式为markdown, 请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
+//
+//
+//            System.out.println(question);
+//            result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
+//            System.out.println(result.getMsg());
+//            String pythonCode = extractBetweenMarkers(result.getMsg(), "```python", "```");
+//            System.out.println(pythonCode);
+//            String pyFileName = fileName.replace(".csv", ".py");
+//            String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/" + pyFileName;
+//
+//            try {
+//                writePythonCodeToFile(pythonCode, pyFilePath);
+//                System.out.println("Python file generated successfully at: " + pyFilePath);
+//            } catch (IOException e) {
+//                System.err.println("Error while generating Python file: " + e.getMessage());
+//            }
+
+            // TODO 造假版本
+
+
+            String host = serverIp; // 远程服务器IP地址
+            String user = "root"; // 远程服务器用户名
+            String password = serverPassword; // 远程服务器密码
+            // 要执行的命令
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./pyFileName.py;");
+//        command.append("ls -la;");
+
+            try {
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+                session.setPassword(password); // 设置会话密码
+                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+                session.connect(); // 连接会话
+
+                Channel channel = session.openChannel("exec"); // 打开一个exec通道
+                ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+                channel.setInputStream(null);
+                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+
+                InputStream inputStream = channel.getInputStream();
+                channel.connect(); // 连接通道
+
+                byte[] buffer = new byte[1024];
+                while (true) {
+                    while (inputStream.available() > 0) {
+                        int i = inputStream.read(buffer, 0, 1024);
+                        if (i < 0) {
+                            break;
+                        }
+                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                    }
+                    if (channel.isClosed()) {
+                        if (inputStream.available() > 0) {
+                            continue;
+                        }
+                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
+                        break;
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception ee) {
+                    } // 等待一秒钟
+                }
+                channel.disconnect(); // 断开通道
+                session.disconnect(); // 断开会话
+            } catch (Exception e) {
+                e.printStackTrace(); // 输出错误信息
+            }
+
+
         }
 
 
@@ -277,9 +393,9 @@ public class ChatGPTController {
     }
 
 
-
     /**
      * 问答
+     *
      * @param question 问题
      * @return 答案
      */
