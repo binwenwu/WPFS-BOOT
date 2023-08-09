@@ -207,6 +207,7 @@ public class ChatGPTController {
             // 判断是否要展示图片
             result.setImage(true);
 
+
             if (tag2) {
                 question = question.replace("预处理后", "");
             } else {
@@ -241,7 +242,7 @@ public class ChatGPTController {
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
             // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./" + pyFileName + ";");
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./pyFileName.py;");
 //        command.append("ls -la;");
 
             try {
@@ -288,11 +289,15 @@ public class ChatGPTController {
         } else {
             // 判断是否要展示报表
             result.setReport(true);
+            result.setMsg("报表生成完成");
+            String tag;
 
             if (tag2) {
                 question = question.replace("预处理后", "");
+                tag = "outfile";
             } else {
                 question = question.replace("预测后", "");
+                tag = "pred";
             }
 
 // TODO GPT版本
@@ -334,12 +339,14 @@ public class ChatGPTController {
 
             // TODO 造假版本
 
-
             String host = serverIp; // 远程服务器IP地址
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
+            String mdFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/" + fileName.replace(".csv", "_")+time+".md";
+            String docxFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/" + fileName.replace(".csv", "_")+time+".docx";
             // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./pyFileName.py;");
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./report.py --file_name " + fileName + " --time_stamp "+time+" --tag "+ tag+";pandoc "+mdFilePath+" -o "+docxFilePath+";");
+
 //        command.append("ls -la;");
 
             try {
