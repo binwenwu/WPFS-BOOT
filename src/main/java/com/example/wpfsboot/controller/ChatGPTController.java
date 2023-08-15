@@ -35,11 +35,27 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+
+
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * @Author: 结束乐队
@@ -140,7 +156,7 @@ public class ChatGPTController {
         }
     }
 
-    private static final String IMAGE_PATH = "/home/wpfs/algorithm/submission75254/gpt_output/"; // 图片文件所在路径
+    private static final String IMAGE_PATH = "/home/wpfs/algorithm/submission75254/gpt_output/img/"; // 图片文件所在路径
 
     @GetMapping("/api/images/{fileName}")
     public ResponseEntity<byte[]> getImage(@PathVariable String fileName) {
@@ -171,6 +187,21 @@ public class ChatGPTController {
             e.printStackTrace();
             return null;
         }
+    }
+
+
+    private final String docxDirectory = "/home/wpfs/algorithm/submission75254/gpt_output/docx"; // 指定存放 .docx 文件的目录
+
+    @GetMapping("/docx/{filename}")
+    public ResponseEntity<Resource> downloadDocx(@PathVariable String filename) throws MalformedURLException {
+        Path filePath = Paths.get(docxDirectory).resolve(filename);
+
+        Resource resource = new UrlResource(filePath.toUri());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
     }
 
 
@@ -217,9 +248,13 @@ public class ChatGPTController {
 
             String text = "我有一个csv文件，位置在" + filePath + ",第一行是列名，第二行开始是数据，其中列名有：DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
             question = text + question
-                    + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/,"
-                    + "图片名为:"+time+".png,"
-                    + "请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
+                    + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/img/,"
+                    + "图片名为:" + time + ".png,"
+                    + "请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。整个代码段用markdown中的```包围";
+            //            question = text + question
+//                    + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/img/,"
+//                    + "图片名为:" + time + ".png,"
+//                    + "请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
 
             System.out.println(question);
             result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
@@ -229,7 +264,7 @@ public class ChatGPTController {
 //            System.out.println(pythonCode);
 
             String pyFileName = fileName.replace(".csv", ".py");
-            String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/" + pyFileName;
+            String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/py/" + pyFileName;
 
             try {
                 writePythonCodeToFile(pythonCode, pyFilePath);
@@ -242,8 +277,8 @@ public class ChatGPTController {
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
             // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./pyFileName.py;");
-//        command.append("ls -la;");
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/py/;python ./" + pyFileName + ";");
+
 
             try {
                 JSch jsch = new JSch();
@@ -300,56 +335,21 @@ public class ChatGPTController {
                 tag = "pred";
             }
 
-// TODO GPT版本
-
-//            String text = "我有一个csv文件,位置在" + filePath + ",第一行是列名,第二行开始是数据,其中列名有: DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
-//            question = text
-//                    + "具体来说,"
-//                    + "DATATIME 为日期，如：2022/1/1  0:00:00，"
-//                    + "WINDSPEED 为天气预报的预测风速，如：0.8，"
-//                    + "PREPOWER 为风机发电预测功率，如：9225，"
-//                    + "WINDDIRECTION 为风向（0~360°)，如：326，"
-//                    + "TEMPERATURE 为温度，如：-12.8，"
-//                    + "HUMIDITY 为湿度，如：64，"
-//                    + "PRESSURE 为气压，如：867，"
-//                    + "AWS 为实际风速，如：1.4，"
-//                    + "APOWER 为实际功率，如：3112，"
-//                    + "YD15 也为实际功率，这是测量方式与APOWER有所差别，如：3112，"
-//                    + "我想针对该csv文件使用Python生成一个数据报表，"
-//                    + "报表内容的格式我想是针对数据的统计分析信息，"
-//                    + "比如：第一部分是均值，那么你就针对除了DATATIME的字段统计其均值，并以表格形式呈现，"
-//                    + "当然统计信息不止均值这一种，你可以扩充，"
-//                    + "报表输出至/home/wpfs/algorithm/submission75254/gpt_output/, 报表名与文件名相同,报表文件的格式为markdown, 请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。并且注释部分用4个#作为前缀";
-//
-//
-//            System.out.println(question);
-//            result.setMsg(OpenAiUtils.createChatCompletion(question).get(0));
-//            System.out.println(result.getMsg());
-//            String pythonCode = extractBetweenMarkers(result.getMsg(), "```python", "```");
-//            System.out.println(pythonCode);
-//            String pyFileName = fileName.replace(".csv", ".py");
-//            String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/" + pyFileName;
-//
-//            try {
-//                writePythonCodeToFile(pythonCode, pyFilePath);
-//                System.out.println("Python file generated successfully at: " + pyFilePath);
-//            } catch (IOException e) {
-//                System.err.println("Error while generating Python file: " + e.getMessage());
-//            }
-
-            // TODO 造假版本
-
+            // TODO 数据报表造假
             String host = serverIp; // 远程服务器IP地址
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
-            String mdFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/" + fileName.replace(".csv", "_")+time+".md";
-            String docxFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/docx/" + fileName.replace(".csv", "_")+time+".docx";
-            // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./report.py --file_name " + fileName + " --time_stamp "+time+" --tag "+ tag+";");
-            StringBuilder command2 = new StringBuilder("pandoc "+mdFilePath+" -o "+docxFilePath+";");
-//            StringBuilder command2 = new StringBuilder("cd /home/wpfs/algorithm/submission75254/gpt_output/markdown/;pandoc 17_1691586123704.md -o test.docx");
+            String mdFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/" + fileName.replace(".csv", "_") + time + ".md";
+            String docxFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/docx/" + fileName.replace(".csv", "_") + time + ".docx";
+            String pdfFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/pdf/" + fileName.replace(".csv", "_") + time + ".pdf";
 
-//        command.append("ls -la;");
+//            mdFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/19_1691754450508.md";
+//            docxFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/docx/19_1691754450508.docx";
+//            pdfFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/pdf/19_1691754450508.pdf";
+
+            // 要执行的命令
+            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./report.py --file_name " + fileName + " --time_stamp " + time + " --tag " + tag + ";" + "cd markdown;pandoc " + mdFilePath + " -o " + docxFilePath + ";");
+
 
             System.out.println("command: " + command.toString());
             try {
@@ -393,59 +393,6 @@ public class ChatGPTController {
             } catch (Exception e) {
                 e.printStackTrace(); // 输出错误信息
             }
-
-//            //睡眠
-//            try {
-//                Thread.sleep(5000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-
-            System.out.println("command2: "+command2.toString());
-            try {
-                JSch jsch = new JSch();
-                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
-                session.setPassword(password); // 设置会话密码
-                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
-                session.connect(); // 连接会话
-
-                Channel channel = session.openChannel("exec"); // 打开一个exec通道
-                ((ChannelExec) channel).setCommand(command2.toString()); // 设置要执行的命令
-                channel.setInputStream(null);
-                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
-
-                InputStream inputStream = channel.getInputStream();
-                channel.connect(); // 连接通道
-
-                byte[] buffer = new byte[1024];
-                while (true) {
-                    while (inputStream.available() > 0) {
-                        int i = inputStream.read(buffer, 0, 1024);
-                        if (i < 0) {
-                            break;
-                        }
-                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
-                    }
-                    if (channel.isClosed()) {
-                        if (inputStream.available() > 0) {
-                            continue;
-                        }
-                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
-                        break;
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (Exception ee) {
-                    } // 等待一秒钟
-                }
-                channel.disconnect(); // 断开通道
-                session.disconnect(); // 断开会话
-            } catch (Exception e) {
-                e.printStackTrace(); // 输出错误信息
-            }
-
-
-
 
         }
 

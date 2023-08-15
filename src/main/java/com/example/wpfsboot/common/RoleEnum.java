@@ -12,5 +12,5 @@ public enum RoleEnum {
     ROLE_ADMIN,
     ROLE_CHARGE,
     ROLE_NORMAL,
-
+    ROLE_USER;
 }
