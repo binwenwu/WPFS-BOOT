@@ -85,6 +85,9 @@ public class ChatGPTController {
     @Autowired
     private OpenAiUtils openAiUtils;
 
+    @Value("${cmd.start}")
+    private String cmdStart;
+
 
     /**
      * @param question
@@ -156,12 +159,12 @@ public class ChatGPTController {
         }
     }
 
-    private static final String IMAGE_PATH = "/home/wpfs/algorithm/submission75254/gpt_output/img/"; // 图片文件所在路径
+    private String IMAGE_PATH = fileUploadPath + "/gpt_output/img/"; // 图片文件所在路径
 
     @GetMapping("/api/images/{fileName}")
     public ResponseEntity<byte[]> getImage(@PathVariable String fileName) {
         try {
-            String imagePath = IMAGE_PATH + fileName.replace(".csv", ".png");
+            String imagePath = fileUploadPath + "/gpt_output/img/" + fileName.replace(".csv", ".png");
             System.out.println("imagePath: " + imagePath);
             byte[] imageData = readImageData(imagePath);
             if (imageData != null) {
@@ -190,11 +193,13 @@ public class ChatGPTController {
     }
 
 
-    private final String docxDirectory = "/home/wpfs/algorithm/submission75254/gpt_output/docx"; // 指定存放 .docx 文件的目录
+    private String docxDirectory = fileUploadPath + "/gpt_output/docx"; // 指定存放 .docx 文件的目录
 
     @GetMapping("/docx/{filename}")
     public ResponseEntity<Resource> downloadDocx(@PathVariable String filename) throws MalformedURLException {
-        Path filePath = Paths.get(docxDirectory).resolve(filename);
+        System.out.println("docxDirectory: " + fileUploadPath + "/gpt_output/docx");
+        Path filePath = Paths.get(fileUploadPath + "/gpt_output/docx").resolve(filename);
+        System.out.println("filePath: " + filePath);
 
         Resource resource = new UrlResource(filePath.toUri());
 
@@ -227,7 +232,7 @@ public class ChatGPTController {
         // 判断问题类型
         int tag1 = containsCode(question);
         boolean tag2 = containsJudge(question);
-        String filePath = tag2 ? "/home/wpfs/algorithm/submission75254/outfile/" + fileName : "/home/wpfs/algorithm/submission75254/pred/" + fileName;
+        String filePath = tag2 ? fileUploadPath + "/outfile/" + fileName : fileUploadPath + "/pred/" + fileName;
 
 
         if (tag1 == 3) {
@@ -248,9 +253,9 @@ public class ChatGPTController {
 
             String text = "我有一个csv文件，位置在" + filePath + ",第一行是列名，第二行开始是数据，其中列名有：DATATIME,WINDSPEED,PREPOWER,WINDDIRECTION,TEMPERATURE,HUMIDITY,PRESSURE,AWS,APOWER,YD15,";
             question = text + question
-                    + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/img/,"
+                    + ", 图片输出至" + fileUploadPath + "/gpt_output/img/,"
                     + "图片名为:" + time + ".png,"
-                    + "请给出完整的Python代码, 默认我已经安装了所有需要的包。且我只需要你返回给我一个可以执行的完整代码段。整个代码段用markdown中的```包围";
+                    + "请给出完整的Python代码, 默认我已经安装了所有需要的包。plt.show()不需要，且我只需要你返回给我一个可以执行的完整代码段。整个代码段用markdown中的```包围";
             //            question = text + question
 //                    + ", 图片输出至/home/wpfs/algorithm/submission75254/gpt_output/img/,"
 //                    + "图片名为:" + time + ".png,"
@@ -264,7 +269,7 @@ public class ChatGPTController {
 //            System.out.println(pythonCode);
 
             String pyFileName = fileName.replace(".csv", ".py");
-            String pyFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/py/" + pyFileName;
+            String pyFilePath = fileUploadPath + "/gpt_output/py/" + pyFileName;
 
             try {
                 writePythonCodeToFile(pythonCode, pyFilePath);
@@ -276,50 +281,79 @@ public class ChatGPTController {
             String host = serverIp; // 远程服务器IP地址
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
-            // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/py/;python ./" + pyFileName + ";");
 
 
-            try {
-                JSch jsch = new JSch();
-                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
-                session.setPassword(password); // 设置会话密码
-                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
-                session.connect(); // 连接会话
+            if (host.equals("localhost")) {
 
-                Channel channel = session.openChannel("exec"); // 打开一个exec通道
-                ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
-                channel.setInputStream(null);
-                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+                String command = "conda activate py37 && cd " + fileUploadPath + "/gpt_output/py/ && python ./" + pyFileName;
+                System.out.println(command);
+                try {
+                    ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+                    processBuilder.redirectErrorStream(true);
 
-                InputStream inputStream = channel.getInputStream();
-                channel.connect(); // 连接通道
+                    Process process = processBuilder.start();
 
-                byte[] buffer = new byte[1024];
-                while (true) {
-                    while (inputStream.available() > 0) {
-                        int i = inputStream.read(buffer, 0, 1024);
-                        if (i < 0) {
+                    InputStream inputStream = process.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line); // 输出结果到控制台
+                    }
+
+                    int exitCode = process.waitFor(); // 等待命令执行完成
+                    System.out.println("exit-status: " + exitCode); // 输出退出状态
+
+                } catch (Exception e) {
+                    e.printStackTrace(); // 输出错误信息
+                }
+
+            } else {
+
+
+                // 要执行的命令
+                StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + "/gpt_output/py/;python ./" + pyFileName + ";");
+
+                try {
+                    JSch jsch = new JSch();
+                    Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+                    session.setPassword(password); // 设置会话密码
+                    session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+                    session.connect(); // 连接会话
+
+                    Channel channel = session.openChannel("exec"); // 打开一个exec通道
+                    ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+                    channel.setInputStream(null);
+                    ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+
+                    InputStream inputStream = channel.getInputStream();
+                    channel.connect(); // 连接通道
+
+                    byte[] buffer = new byte[1024];
+                    while (true) {
+                        while (inputStream.available() > 0) {
+                            int i = inputStream.read(buffer, 0, 1024);
+                            if (i < 0) {
+                                break;
+                            }
+                            System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                        }
+                        if (channel.isClosed()) {
+                            if (inputStream.available() > 0) {
+                                continue;
+                            }
+                            System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
                             break;
                         }
-                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                        try {
+                            Thread.sleep(1000);
+                        } catch (Exception ee) {
+                        } // 等待一秒钟
                     }
-                    if (channel.isClosed()) {
-                        if (inputStream.available() > 0) {
-                            continue;
-                        }
-                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
-                        break;
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (Exception ee) {
-                    } // 等待一秒钟
+                    channel.disconnect(); // 断开通道
+                    session.disconnect(); // 断开会话
+                } catch (Exception e) {
+                    e.printStackTrace(); // 输出错误信息
                 }
-                channel.disconnect(); // 断开通道
-                session.disconnect(); // 断开会话
-            } catch (Exception e) {
-                e.printStackTrace(); // 输出错误信息
             }
         } else {
             // 判断是否要展示报表
@@ -339,59 +373,80 @@ public class ChatGPTController {
             String host = serverIp; // 远程服务器IP地址
             String user = "root"; // 远程服务器用户名
             String password = serverPassword; // 远程服务器密码
-            String mdFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/" + fileName.replace(".csv", "_") + time + ".md";
-            String docxFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/docx/" + fileName.replace(".csv", "_") + time + ".docx";
-            String pdfFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/pdf/" + fileName.replace(".csv", "_") + time + ".pdf";
-
-//            mdFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/markdown/19_1691754450508.md";
-//            docxFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/docx/19_1691754450508.docx";
-//            pdfFilePath = "/home/wpfs/algorithm/submission75254/gpt_output/pdf/19_1691754450508.pdf";
-
-            // 要执行的命令
-            StringBuilder command = new StringBuilder("conda activate py37;cd /home/wpfs/algorithm/submission75254/gpt_output/;python ./report.py --file_name " + fileName + " --time_stamp " + time + " --tag " + tag + ";" + "cd markdown;pandoc " + mdFilePath + " -o " + docxFilePath + ";");
+            String mdFilePath = fileUploadPath + "/gpt_output/markdown/" + fileName.replace(".csv", "_") + time + ".md";
+            String docxFilePath = fileUploadPath + "/gpt_output/docx/" + fileName.replace(".csv", "_") + time + ".docx";
+            String pdfFilePath = fileUploadPath + "/gpt_output/pdf/" + fileName.replace(".csv", "_") + time + ".pdf";
 
 
-            System.out.println("command: " + command.toString());
-            try {
-                JSch jsch = new JSch();
-                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
-                session.setPassword(password); // 设置会话密码
-                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
-                session.connect(); // 连接会话
+            if (serverIp.equals("localhost")) {
+                String command = "conda activate py37 && cd " + fileUploadPath + "/gpt_output/ && python ./report_local.py --file_name " + fileName + " --time_stamp " + time + " --tag " + tag + " && " + "cd markdown && pandoc " + mdFilePath + " -o " + docxFilePath;
 
-                Channel channel = session.openChannel("exec"); // 打开一个exec通道
-                ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
-                channel.setInputStream(null);
-                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+                try {
+                    ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+                    processBuilder.redirectErrorStream(true);
 
-                InputStream inputStream = channel.getInputStream();
-                channel.connect(); // 连接通道
+                    Process process = processBuilder.start();
 
-                byte[] buffer = new byte[1024];
-                while (true) {
-                    while (inputStream.available() > 0) {
-                        int i = inputStream.read(buffer, 0, 1024);
-                        if (i < 0) {
+                    InputStream inputStream = process.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line); // 输出结果到控制台
+                    }
+
+                    int exitCode = process.waitFor(); // 等待命令执行完成
+                    System.out.println("exit-status: " + exitCode); // 输出退出状态
+
+                } catch (Exception e) {
+                    e.printStackTrace(); // 输出错误信息
+                }
+            } else {
+                // 要执行的命令
+                StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + "/gpt_output/;python ./report.py --file_name " + fileName + " --time_stamp " + time + " --tag " + tag + ";" + "cd markdown;pandoc " + mdFilePath + " -o " + docxFilePath + ";");
+
+
+                System.out.println("command: " + command.toString());
+                try {
+                    JSch jsch = new JSch();
+                    Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+                    session.setPassword(password); // 设置会话密码
+                    session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+                    session.connect(); // 连接会话
+
+                    Channel channel = session.openChannel("exec"); // 打开一个exec通道
+                    ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+                    channel.setInputStream(null);
+                    ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+
+                    InputStream inputStream = channel.getInputStream();
+                    channel.connect(); // 连接通道
+
+                    byte[] buffer = new byte[1024];
+                    while (true) {
+                        while (inputStream.available() > 0) {
+                            int i = inputStream.read(buffer, 0, 1024);
+                            if (i < 0) {
+                                break;
+                            }
+                            System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                        }
+                        if (channel.isClosed()) {
+                            if (inputStream.available() > 0) {
+                                continue;
+                            }
+                            System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
                             break;
                         }
-                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                        try {
+                            Thread.sleep(1000);
+                        } catch (Exception ee) {
+                        } // 等待一秒钟
                     }
-                    if (channel.isClosed()) {
-                        if (inputStream.available() > 0) {
-                            continue;
-                        }
-                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
-                        break;
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (Exception ee) {
-                    } // 等待一秒钟
+                    channel.disconnect(); // 断开通道
+                    session.disconnect(); // 断开会话
+                } catch (Exception e) {
+                    e.printStackTrace(); // 输出错误信息
                 }
-                channel.disconnect(); // 断开通道
-                session.disconnect(); // 断开会话
-            } catch (Exception e) {
-                e.printStackTrace(); // 输出错误信息
             }
 
         }

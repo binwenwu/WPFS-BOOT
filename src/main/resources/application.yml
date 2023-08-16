@@ -1,21 +1,29 @@
 #chatgpt配置
 chatgpt:
   token: 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
-  proxy-host: ${server.ip}
-  proxy-port: 7890
+  proxy-host: ${server.ip} #可选
+  proxy-port: ${server.proxy-port} #可选
   model: text-davinci-003 #可选
   chat-model: gpt-3.5-turbo #可选
   retries: 20 #可选，默认为5
   session-expiration-time: 3000 #可选，不填则会话永不过期
 
 server:
-  ip: 10.101.240.60
+  ip: localhost
   port: 7070
+  proxy-port: 61704
   password: jieshuyuedui
 
+
+# 文件上传路径，部署版本: /home/wpfs/algorithm/submission75254, 本地版本: C:/Users/Jiaoshou/Desktop/submission75254
 files:
   upload:
-    path: /home/wpfs/algorithm/submission75254    # 文件上传路径
+    path: C:/Users/Jiaoshou/Desktop/submission75254
+
+
+cmd:
+  start: E:\Anaconda3\Scripts\activate.bat &
+
 
 spring:
   datasource:
@@ -34,7 +42,7 @@ spring:
   boot:
     admin:
       client:
-        url: http://10.101.240.60:7777  # SpringBoot Admin的服务端地址
+        url: http://${server.ip}:7777  # SpringBoot Admin的服务端地址
         instance:
           prefer-ip: true # 基于IP地址进行服务器注册，默认域名注册
   application:

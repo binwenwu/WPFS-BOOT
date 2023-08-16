@@ -72,6 +72,8 @@ public class FileController {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    @Value("${cmd.start}")
+    private String cmdStart;
 
     /**
      * 文件上传接口
@@ -468,57 +470,87 @@ public class FileController {
         String host = serverIp; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
-        // 要执行的命令
-        System.out.println("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method "+paramsForm.getResampleMethod()+" --outlier_detection "+paramsForm.getOutlierDetection());
-        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method "+paramsForm.getResampleMethod()+" --outlier_detection "+paramsForm.getOutlierDetection());
+
+
+
+        if(host.equals("localhost")){
+            String command = "conda activate py37 && cd " + fileUploadPath + " && python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method " + paramsForm.getResampleMethod() + " --outlier_detection " + paramsForm.getOutlierDetection();
+
+            try {
+                ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+                processBuilder.redirectErrorStream(true);
+
+                Process process = processBuilder.start();
+
+                InputStream inputStream = process.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line); // 输出结果到控制台
+                }
+
+                int exitCode = process.waitFor(); // 等待命令执行完成
+                System.out.println("exit-status: " + exitCode); // 输出退出状态
+
+            } catch (Exception e) {
+                e.printStackTrace(); // 输出错误信息
+            }
+
+        }else {
+            // 要执行的命令
+            System.out.println("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method " + paramsForm.getResampleMethod() + " --outlier_detection " + paramsForm.getOutlierDetection());
+            StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python data_preprocess.py --file_name " + paramsForm.getFileName() + " --resample_method " + paramsForm.getResampleMethod() + " --outlier_detection " + paramsForm.getOutlierDetection());
 //        command.append("ls -la;");
 
 
-        try {
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
-            session.setPassword(password); // 设置会话密码
-            session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
-            session.connect(); // 连接会话
+            try {
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+                session.setPassword(password); // 设置会话密码
+                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+                session.connect(); // 连接会话
 
-            Channel channel = session.openChannel("exec"); // 打开一个exec通道
-            ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
-            channel.setInputStream(null);
-            ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+                Channel channel = session.openChannel("exec"); // 打开一个exec通道
+                ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+                channel.setInputStream(null);
+                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
 
-            InputStream inputStream = channel.getInputStream();
-            channel.connect(); // 连接通道
+                InputStream inputStream = channel.getInputStream();
+                channel.connect(); // 连接通道
 
-            byte[] buffer = new byte[10240];
-            while (true) {
-                while (inputStream.available() > 0) {
-                    int i = inputStream.read(buffer, 0, 10240);
-                    if (i < 0) {
+                byte[] buffer = new byte[10240];
+                while (true) {
+                    while (inputStream.available() > 0) {
+                        int i = inputStream.read(buffer, 0, 10240);
+                        if (i < 0) {
+                            break;
+                        }
+                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                    }
+                    if (channel.isClosed()) {
+                        if (inputStream.available() > 0) {
+                            continue;
+                        }
+                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
                         break;
                     }
-                    System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception ee) {
+                    } // 等待一秒钟
                 }
-                if (channel.isClosed()) {
-                    if (inputStream.available() > 0) {
-                        continue;
-                    }
-                    System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
-                    break;
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception ee) {
-                } // 等待一秒钟
+                channel.disconnect(); // 断开通道
+                session.disconnect(); // 断开会话
+            } catch (Exception e) {
+                e.printStackTrace(); // 输出错误信息
             }
-            channel.disconnect(); // 断开通道
-            session.disconnect(); // 断开会话
-        } catch (Exception e) {
-            e.printStackTrace(); // 输出错误信息
         }
 
         System.out.println("预处理完成");
         return Result.success();
     }
+
+
 
     /**
      * 预测
@@ -534,50 +566,76 @@ public class FileController {
         String host = serverIp; // 远程服务器IP地址
         String user = "root"; // 远程服务器用户名
         String password = serverPassword; // 远程服务器密码
-        // 要执行的命令
-        StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python predict.py --file_name " + predictParams.getFileName() + " --start_time "+predictParams.getStartTime()+" --end_time "+predictParams.getEndTime());
+
+
+        if(host.equals("localhost")){
+            String command = "conda activate py37 && cd " + fileUploadPath + " && python predict.py --file_name " + predictParams.getFileName() + " --start_time " + predictParams.getStartTime() + " --end_time " + predictParams.getEndTime();
+
+            try {
+                ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+                processBuilder.redirectErrorStream(true);
+
+                Process process = processBuilder.start();
+
+                InputStream inputStream = process.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line); // 输出结果到控制台
+                }
+
+                int exitCode = process.waitFor(); // 等待命令执行完成
+                System.out.println("exit-status: " + exitCode); // 输出退出状态
+
+            } catch (Exception e) {
+                e.printStackTrace(); // 输出错误信息
+            }
+        }else {
+            // 要执行的命令
+            StringBuilder command = new StringBuilder("conda activate py37;cd " + fileUploadPath + ";python predict.py --file_name " + predictParams.getFileName() + " --start_time " + predictParams.getStartTime() + " --end_time " + predictParams.getEndTime());
 //        command.append("ls -la;");
 
-        try {
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
-            session.setPassword(password); // 设置会话密码
-            session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
-            session.connect(); // 连接会话
+            try {
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, host, 22); // 创建一个SSH会话
+                session.setPassword(password); // 设置会话密码
+                session.setConfig("StrictHostKeyChecking", "no"); // 设置会话配置,不检查HostKey
+                session.connect(); // 连接会话
 
-            Channel channel = session.openChannel("exec"); // 打开一个exec通道
-            ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
-            channel.setInputStream(null);
-            ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
+                Channel channel = session.openChannel("exec"); // 打开一个exec通道
+                ((ChannelExec) channel).setCommand(command.toString()); // 设置要执行的命令
+                channel.setInputStream(null);
+                ((ChannelExec) channel).setErrStream(System.err); // 设置错误输出流
 
-            InputStream inputStream = channel.getInputStream();
-            channel.connect(); // 连接通道
+                InputStream inputStream = channel.getInputStream();
+                channel.connect(); // 连接通道
 
-            byte[] buffer = new byte[1024];
-            while (true) {
-                while (inputStream.available() > 0) {
-                    int i = inputStream.read(buffer, 0, 1024);
-                    if (i < 0) {
+                byte[] buffer = new byte[1024];
+                while (true) {
+                    while (inputStream.available() > 0) {
+                        int i = inputStream.read(buffer, 0, 1024);
+                        if (i < 0) {
+                            break;
+                        }
+                        System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                    }
+                    if (channel.isClosed()) {
+                        if (inputStream.available() > 0) {
+                            continue;
+                        }
+                        System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
                         break;
                     }
-                    System.out.print(new String(buffer, 0, i)); // 输出结果到控制台
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception ee) {
+                    } // 等待一秒钟
                 }
-                if (channel.isClosed()) {
-                    if (inputStream.available() > 0) {
-                        continue;
-                    }
-                    System.out.println("exit-status: " + channel.getExitStatus()); // 输出退出状态
-                    break;
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception ee) {
-                } // 等待一秒钟
+                channel.disconnect(); // 断开通道
+                session.disconnect(); // 断开会话
+            } catch (Exception e) {
+                e.printStackTrace(); // 输出错误信息
             }
-            channel.disconnect(); // 断开通道
-            session.disconnect(); // 断开会话
-        } catch (Exception e) {
-            e.printStackTrace(); // 输出错误信息
         }
 
         return Result.success();
