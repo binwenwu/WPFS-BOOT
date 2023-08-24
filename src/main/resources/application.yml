@@ -1,6 +1,6 @@
 #chatgpt配置
 chatgpt:
-  token: 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
+  token: token
   proxy-host: ${server.ip} #可选
   proxy-port: ${server.proxy-port} #可选
   model: text-davinci-003 #可选
@@ -28,13 +28,13 @@ cmd:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://125.220.153.23:31621/wpfs?serverTimezone=GMT%2b8 # 数据库地址
+    url:  # 数据库地址
     username: root
-    password: VubCMiHvT1
+    password:
   redis:
-    host: 125.220.153.23 # redis地址
-    port: 31352
-    password: GWCMnhHUYa
+    host:  # redis地址
+    port:
+    password:
   servlet:
     multipart:
       max-file-size: 100MB
